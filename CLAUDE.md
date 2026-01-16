@@ -9,19 +9,18 @@ Dumper is a personal knowledge capture system. Users forward links and text to a
 ## Build & Run Commands
 
 ```bash
-# Build (uses CGO-free modernc.org/sqlite)
-go build ./cmd/dumper
+# Verify build compiles (use go test, never go build - don't create binary artifacts)
+go test ./...
 
 # Run (requires environment variables)
-./dumper
-
-# Test (no tests exist yet - create with table-driven tests)
-go test ./...
+go run ./cmd/dumper
 
 # Docker
 docker build -t dumper .
 docker run -e TELEGRAM_BOT_TOKEN=... -e OPENROUTER_API_KEY=... dumper
 ```
+
+**IMPORTANT**: Never run `go build` directly - use `go test ./...` to verify compilation. Do not commit binary artifacts.
 
 ## Environment Variables
 

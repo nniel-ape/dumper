@@ -3,6 +3,9 @@ package bot
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"path"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -73,21 +76,30 @@ Just send me any URL or text message!`
 }
 
 func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
+	// Check for photo FIRST
+	if len(msg.Photo) > 0 {
+		b.handlePhoto(ctx, msg)
+		return
+	}
+
 	text := strings.TrimSpace(msg.Text)
 	if text == "" {
 		return
 	}
 
-	// Send processing message
-	b.send(msg.Chat.ID, "⏳ Processing...")
-
 	var raw ingest.RawContent
 	raw.UserID = msg.From.ID
 
 	if ingest.IsURL(text) {
+		b.send(msg.Chat.ID, "⏳ Processing link...")
 		raw.Type = ingest.ContentTypeLink
 		raw.URL = text
+	} else if ingest.IsShortTopicMessage(text) {
+		b.send(msg.Chat.ID, fmt.Sprintf("🔍 Searching: <b>%s</b>...", text))
+		raw.Type = ingest.ContentTypeSearch
+		raw.Text = text
 	} else {
+		b.send(msg.Chat.ID, "⏳ Processing note...")
 		raw.Type = ingest.ContentTypeNote
 		raw.Text = text
 	}
@@ -111,6 +123,82 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 %s
 
 %s`, item.Title, item.Summary, tagsStr)
+
+	if b.webAppURL != "" {
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("View in App", b.webAppURL+"?item="+item.ID),
+			),
+		)
+		b.sendWithKeyboard(msg.Chat.ID, response, keyboard)
+	} else {
+		b.send(msg.Chat.ID, response)
+	}
+}
+
+func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
+	// Get largest photo (last in slice)
+	photos := msg.Photo
+	photo := photos[len(photos)-1]
+
+	b.send(msg.Chat.ID, "📷 Saving image...")
+
+	// Get file info from Telegram
+	fileConfig := tgbotapi.FileConfig{FileID: photo.FileID}
+	file, err := b.api.GetFile(fileConfig)
+	if err != nil {
+		b.send(msg.Chat.ID, fmt.Sprintf("❌ Failed to get file info: %v", err))
+		return
+	}
+
+	// Download file
+	fileURL := file.Link(b.api.Token)
+	resp, err := http.Get(fileURL)
+	if err != nil {
+		b.send(msg.Chat.ID, fmt.Sprintf("❌ Failed to download image: %v", err))
+		return
+	}
+	defer resp.Body.Close()
+
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		b.send(msg.Chat.ID, fmt.Sprintf("❌ Failed to read image: %v", err))
+		return
+	}
+
+	// Determine file extension
+	ext := "jpg" // default
+	if filePath := file.FilePath; filePath != "" {
+		if e := path.Ext(filePath); e != "" {
+			ext = strings.TrimPrefix(e, ".")
+		}
+	}
+
+	raw := ingest.RawContent{
+		Type:      ingest.ContentTypeImage,
+		UserID:    msg.From.ID,
+		ImageData: imageData,
+		ImageExt:  ext,
+		Caption:   msg.Caption,
+	}
+
+	item, err := b.pipeline.Process(ctx, raw)
+	if err != nil {
+		b.send(msg.Chat.ID, fmt.Sprintf("❌ Failed to save image: %v", err))
+		return
+	}
+
+	// Format response
+	var tagsStr string
+	if len(item.Tags) > 0 {
+		tagsStr = "#" + strings.Join(item.Tags, " #")
+	}
+
+	response := fmt.Sprintf(`✅ <b>Image saved!</b>
+
+<b>%s</b>
+
+%s`, item.Title, tagsStr)
 
 	if b.webAppURL != "" {
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(

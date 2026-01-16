@@ -87,3 +87,13 @@ func (m *Manager) Close() error {
 func (v *VaultStore) DB() *sql.DB {
 	return v.db
 }
+
+// DataDir returns the base data directory path
+func (m *Manager) DataDir() string {
+	return m.dataDir
+}
+
+// UserDir returns the directory path for a specific user
+func (m *Manager) UserDir(userID int64) string {
+	return filepath.Join(m.dataDir, "users", fmt.Sprintf("%d", userID))
+}

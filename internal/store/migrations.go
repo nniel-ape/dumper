@@ -11,12 +11,13 @@ const migrationSQL = `
 
 CREATE TABLE IF NOT EXISTS items (
     id TEXT PRIMARY KEY,
-    type TEXT NOT NULL CHECK(type IN ('link', 'note')),
+    type TEXT NOT NULL CHECK(type IN ('link', 'note', 'image', 'search')),
     url TEXT,
     title TEXT NOT NULL,
     content TEXT,
     summary TEXT,
     raw_content TEXT,
+    image_path TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -81,9 +82,74 @@ CREATE INDEX IF NOT EXISTS idx_relationships_source ON relationships(source_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_target ON relationships(target_id);
 `
 
+// Migration for existing databases to add image_path column
+const migrationAddImagePath = `
+ALTER TABLE items ADD COLUMN image_path TEXT;
+`
+
+// Migration to update CHECK constraint for existing databases
+// SQLite doesn't support ALTER TABLE to modify CHECK constraints, so we recreate the table
+const migrationUpdateTypeConstraint = `
+-- Disable foreign keys temporarily
+PRAGMA foreign_keys=OFF;
+
+-- Create new table with updated CHECK constraint
+CREATE TABLE IF NOT EXISTS items_new (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL CHECK(type IN ('link', 'note', 'image', 'search')),
+    url TEXT,
+    title TEXT NOT NULL,
+    content TEXT,
+    summary TEXT,
+    raw_content TEXT,
+    image_path TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Copy data from old table (handle missing image_path column)
+INSERT OR IGNORE INTO items_new (id, type, url, title, content, summary, raw_content, created_at, updated_at)
+SELECT id, type, url, title, content, summary, raw_content, created_at, updated_at FROM items;
+
+-- Drop old table
+DROP TABLE items;
+
+-- Rename new table
+ALTER TABLE items_new RENAME TO items;
+
+-- Recreate indexes
+CREATE INDEX IF NOT EXISTS idx_items_type ON items(type);
+CREATE INDEX IF NOT EXISTS idx_items_created ON items(created_at DESC);
+
+-- Re-enable foreign keys
+PRAGMA foreign_keys=ON;
+`
+
 func RunMigrations(db *sql.DB) error {
 	if _, err := db.Exec(migrationSQL); err != nil {
 		return fmt.Errorf("exec migration: %w", err)
 	}
+
+	// Add image_path column for existing databases (ignore error if column exists)
+	_, _ = db.Exec(migrationAddImagePath)
+
+	// Check if we need to update the CHECK constraint
+	// by checking if 'image' type is allowed
+	var count int
+	err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('items') WHERE name='type'`).Scan(&count)
+	if err == nil && count > 0 {
+		// Try inserting a test row to see if constraint allows 'image'
+		_, err := db.Exec(`INSERT INTO items (id, type, title) VALUES ('__test__', 'image', 'test')`)
+		if err != nil {
+			// Constraint doesn't allow 'image', need to migrate
+			if _, err := db.Exec(migrationUpdateTypeConstraint); err != nil {
+				return fmt.Errorf("update type constraint: %w", err)
+			}
+		} else {
+			// Clean up test row
+			_, _ = db.Exec(`DELETE FROM items WHERE id = '__test__'`)
+		}
+	}
+
 	return nil
 }

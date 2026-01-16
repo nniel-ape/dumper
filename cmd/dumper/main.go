@@ -16,6 +16,7 @@ import (
 	"github.com/nerdneilsfield/dumper/internal/config"
 	"github.com/nerdneilsfield/dumper/internal/ingest"
 	"github.com/nerdneilsfield/dumper/internal/llm"
+	"github.com/nerdneilsfield/dumper/internal/search"
 	"github.com/nerdneilsfield/dumper/internal/store"
 )
 
@@ -61,8 +62,11 @@ func run() error {
 	// Initialize LLM client
 	llmClient := llm.NewClient(cfg.OpenRouterKey, cfg.OpenRouterModel)
 
+	// Initialize search client
+	searchClient := search.NewClient()
+
 	// Initialize processing pipeline
-	pipeline := ingest.NewPipeline(llmClient, stores)
+	pipeline := ingest.NewPipeline(llmClient, searchClient, stores)
 
 	// Initialize bot
 	tgBot, err := bot.New(cfg.TelegramToken, pipeline, stores, cfg.WebAppURL)

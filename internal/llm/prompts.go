@@ -55,3 +55,28 @@ Instructions:
 - Reference specific items when relevant
 
 Answer:`
+
+const SummarizeSearchPrompt = `You are a knowledge assistant. The user searched for a topic and we found some information.
+Create a helpful knowledge entry about this topic.
+
+Topic: %s
+
+Search Results:
+---
+%s
+---
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{
+  "title": "concise descriptive title for this topic (max 10 words)",
+  "summary": "2-4 sentence informative summary about this topic",
+  "tags": ["tag1", "tag2", "tag3"],
+  "related_topics": ["related topic 1", "related topic 2"]
+}
+
+Rules:
+- If search results are empty or unhelpful, use your general knowledge about the topic
+- Tags should be lowercase, relevant to the topic
+- Generate 3-5 relevant tags
+- Summary should explain what this topic is and why it's notable
+- Include the most important facts or uses`

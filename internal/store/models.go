@@ -5,8 +5,10 @@ import "time"
 type ItemType string
 
 const (
-	ItemTypeLink ItemType = "link"
-	ItemTypeNote ItemType = "note"
+	ItemTypeLink   ItemType = "link"
+	ItemTypeNote   ItemType = "note"
+	ItemTypeImage  ItemType = "image"
+	ItemTypeSearch ItemType = "search"
 )
 
 type Item struct {
@@ -17,6 +19,7 @@ type Item struct {
 	Content    string    `json:"content,omitempty"`
 	Summary    string    `json:"summary,omitempty"`
 	RawContent string    `json:"-"`
+	ImagePath  string    `json:"image_path,omitempty"` // relative path from user dir
 	Tags       []string  `json:"tags"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`

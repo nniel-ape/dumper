@@ -142,3 +142,28 @@ func (c *Client) FindRelationships(ctx context.Context, title, summary string, t
 	}
 	return suggestions, nil
 }
+
+// SummarizeSearchResults creates a knowledge entry from search results about a topic.
+func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResults string) (*ProcessedContent, error) {
+	prompt := fmt.Sprintf(SummarizeSearchPrompt, topic, searchResults)
+
+	response, err := c.Chat(ctx, []Message{
+		{Role: "user", Content: prompt},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("chat: %w", err)
+	}
+
+	// Clean response
+	response = strings.TrimSpace(response)
+	response = strings.TrimPrefix(response, "```json")
+	response = strings.TrimPrefix(response, "```")
+	response = strings.TrimSuffix(response, "```")
+	response = strings.TrimSpace(response)
+
+	var result ProcessedContent
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
+		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, response)
+	}
+	return &result, nil
+}

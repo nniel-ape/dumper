@@ -2,10 +2,12 @@ package bot
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/nerdneilsfield/dumper/internal/i18n"
 	"github.com/nerdneilsfield/dumper/internal/ingest"
 	"github.com/nerdneilsfield/dumper/internal/store"
 )
@@ -88,4 +90,30 @@ func (b *Bot) sendWithKeyboard(chatID int64, text string, keyboard tgbotapi.Inli
 	if _, err := b.api.Send(msg); err != nil {
 		slog.Error("failed to send message", "error", err)
 	}
+}
+
+// getUserLang returns a Localizer for the user's preferred language.
+// Priority: memory cache -> DB settings -> Telegram language code -> English default.
+func (b *Bot) getUserLang(userID int64, telegramLangCode string) *i18n.Localizer {
+	// 1. Check memory cache
+	if lang, ok := i18n.GetCachedLang(userID); ok {
+		return i18n.New(string(lang))
+	}
+
+	// 2. Check DB settings
+	vault, err := b.stores.GetVault(userID)
+	if err == nil {
+		if langCode, err := vault.GetSetting("language"); err == nil {
+			lang := i18n.ParseLang(langCode)
+			i18n.CacheLang(userID, lang)
+			return i18n.New(string(lang))
+		} else if err != sql.ErrNoRows {
+			slog.Warn("failed to get language setting", "user_id", userID, "error", err)
+		}
+	}
+
+	// 3. Fall back to Telegram's LanguageCode
+	lang := i18n.ParseLang(telegramLangCode)
+	i18n.CacheLang(userID, lang)
+	return i18n.New(string(lang))
 }

@@ -76,13 +76,18 @@ func (c *Client) Chat(ctx context.Context, messages []Message) (string, error) {
 	return chatResp.Choices[0].Message.Content, nil
 }
 
-func (c *Client) ProcessContent(ctx context.Context, contentType, content string) (*ProcessedContent, error) {
+func (c *Client) ProcessContent(ctx context.Context, contentType, content, lang string) (*ProcessedContent, error) {
 	// Truncate content if too long (preserve first ~8000 chars)
 	if len(content) > 8000 {
 		content = content[:8000] + "..."
 	}
 
 	prompt := fmt.Sprintf(ProcessContentPrompt, contentType, content)
+
+	// Add language instruction for non-English
+	if lang == "ru" {
+		prompt += "\n\nIMPORTANT: Generate the title and summary in Russian (русский язык)."
+	}
 
 	response, err := c.Chat(ctx, []Message{
 		{Role: "user", Content: prompt},
@@ -144,8 +149,13 @@ func (c *Client) FindRelationships(ctx context.Context, title, summary string, t
 }
 
 // SummarizeSearchResults creates a knowledge entry from search results about a topic.
-func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResults string) (*ProcessedContent, error) {
+func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResults, lang string) (*ProcessedContent, error) {
 	prompt := fmt.Sprintf(SummarizeSearchPrompt, topic, searchResults)
+
+	// Add language instruction for non-English
+	if lang == "ru" {
+		prompt += "\n\nIMPORTANT: Generate the title and summary in Russian (русский язык)."
+	}
 
 	response, err := c.Chat(ctx, []Message{
 		{Role: "user", Content: prompt},

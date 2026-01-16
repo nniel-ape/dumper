@@ -17,6 +17,7 @@ type RawContent struct {
 	ImageData []byte // raw image bytes (for images)
 	ImageExt  string // file extension: jpg, png, etc.
 	Caption   string // optional Telegram caption
+	Language  string // user's preferred language code (e.g., "en", "ru")
 }
 
 type InputSource interface {

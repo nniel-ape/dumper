@@ -78,7 +78,7 @@ func (p *Pipeline) processLink(ctx context.Context, raw RawContent) (*store.Item
 	}
 
 	// Process with LLM
-	processed, err := p.llmClient.ProcessContent(ctx, "web article", extracted.Content)
+	processed, err := p.llmClient.ProcessContent(ctx, "web article", extracted.Content, raw.Language)
 	if err != nil {
 		slog.Warn("LLM processing failed", "error", err)
 		return &store.Item{
@@ -103,7 +103,7 @@ func (p *Pipeline) processLink(ctx context.Context, raw RawContent) (*store.Item
 }
 
 func (p *Pipeline) processNote(ctx context.Context, raw RawContent) (*store.Item, error) {
-	processed, err := p.llmClient.ProcessContent(ctx, "note", raw.Text)
+	processed, err := p.llmClient.ProcessContent(ctx, "note", raw.Text, raw.Language)
 	if err != nil {
 		slog.Warn("LLM processing failed", "error", err)
 		// Fallback: save as-is
@@ -183,7 +183,7 @@ func (p *Pipeline) processSearch(ctx context.Context, raw RawContent) (*store.It
 	}
 
 	// Summarize with LLM
-	processed, err := p.llmClient.SummarizeSearchResults(ctx, topic, searchText)
+	processed, err := p.llmClient.SummarizeSearchResults(ctx, topic, searchText, raw.Language)
 	if err != nil {
 		slog.Warn("LLM summarization failed", "error", err)
 		// Fallback: save raw search result

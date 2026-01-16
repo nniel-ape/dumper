@@ -97,3 +97,22 @@ func (m *Manager) DataDir() string {
 func (m *Manager) UserDir(userID int64) string {
 	return filepath.Join(m.dataDir, "users", fmt.Sprintf("%d", userID))
 }
+
+// GetSetting retrieves a setting value by key.
+func (v *VaultStore) GetSetting(key string) (string, error) {
+	var value string
+	err := v.db.QueryRow("SELECT value FROM settings WHERE key = ?", key).Scan(&value)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+// SetSetting stores a setting value (upsert).
+func (v *VaultStore) SetSetting(key, value string) error {
+	_, err := v.db.Exec(
+		"INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+		key, value,
+	)
+	return err
+}

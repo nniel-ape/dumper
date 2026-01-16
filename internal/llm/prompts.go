@@ -1,0 +1,57 @@
+package llm
+
+const ProcessContentPrompt = `Analyze the following content and extract structured information.
+
+Content Type: %s
+Content:
+---
+%s
+---
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{
+  "title": "concise descriptive title (max 10 words)",
+  "summary": "2-3 sentence summary capturing key points",
+  "tags": ["tag1", "tag2", "tag3"],
+  "related_topics": ["topic that might connect to other saved items"]
+}
+
+Rules:
+- Tags should be lowercase, single words or short phrases
+- Generate 3-7 relevant tags
+- Summary should be informative but concise
+- Related topics help build knowledge graph connections`
+
+const FindRelationshipsPrompt = `Given a new item and existing items, identify semantic relationships.
+
+New item:
+Title: %s
+Summary: %s
+Tags: %v
+
+Existing items:
+%s
+
+Respond with ONLY valid JSON array of relationships:
+[
+  {"target_id": "id", "relation_type": "type", "strength": 0.8}
+]
+
+Relation types: "similar_topic", "references", "contradicts", "extends", "prerequisite"
+Strength: 0.0-1.0 (how strong the connection is)
+Only include relationships with strength >= 0.5`
+
+const AnswerQuestionPrompt = `Based on the following saved knowledge items, answer the user's question.
+
+User question: %s
+
+Relevant items:
+%s
+
+Instructions:
+- Synthesize information from the provided items
+- Be concise but informative
+- If the answer is not in the provided items, say so
+- Reference specific items when relevant
+
+Answer:`

@@ -1,0 +1,7 @@
+.env
+data/
+*.db
+web/dist/
+node_modules/
+*.exe
+.DS_Store

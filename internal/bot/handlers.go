@@ -79,23 +79,24 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	raw.UserID = msg.From.ID
 	raw.Language = l.Code()
 
+	var sentMsg tgbotapi.Message
 	if ingest.IsURL(text) {
-		b.send(msg.Chat.ID, l.Get(i18n.MsgProcessingLink))
+		sentMsg, _ = b.sendAndReturn(msg.Chat.ID, l.Get(i18n.MsgProcessingLink))
 		raw.Type = ingest.ContentTypeLink
 		raw.URL = text
 	} else if ingest.IsShortTopicMessage(text) {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgSearching, text))
+		sentMsg, _ = b.sendAndReturn(msg.Chat.ID, l.Getf(i18n.MsgSearching, text))
 		raw.Type = ingest.ContentTypeSearch
 		raw.Text = text
 	} else {
-		b.send(msg.Chat.ID, l.Get(i18n.MsgProcessingNote))
+		sentMsg, _ = b.sendAndReturn(msg.Chat.ID, l.Get(i18n.MsgProcessingNote))
 		raw.Type = ingest.ContentTypeNote
 		raw.Text = text
 	}
 
 	item, err := b.pipeline.Process(ctx, raw)
 	if err != nil {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedProcess, err))
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedProcess, err))
 		return
 	}
 
@@ -119,9 +120,9 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 				tgbotapi.NewInlineKeyboardButtonURL(l.Get(i18n.MsgViewInApp), b.webAppURL+"?item="+item.ID),
 			),
 		)
-		b.sendWithKeyboard(msg.Chat.ID, response, keyboard)
+		b.editWithKeyboard(msg.Chat.ID, sentMsg.MessageID, response, keyboard)
 	} else {
-		b.send(msg.Chat.ID, response)
+		b.edit(msg.Chat.ID, sentMsg.MessageID, response)
 	}
 }
 
@@ -132,13 +133,13 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 	photos := msg.Photo
 	photo := photos[len(photos)-1]
 
-	b.send(msg.Chat.ID, l.Get(i18n.MsgSavingImage))
+	sentMsg, _ := b.sendAndReturn(msg.Chat.ID, l.Get(i18n.MsgSavingImage))
 
 	// Get file info from Telegram
 	fileConfig := tgbotapi.FileConfig{FileID: photo.FileID}
 	file, err := b.api.GetFile(fileConfig)
 	if err != nil {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedFileInfo, err))
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedFileInfo, err))
 		return
 	}
 
@@ -146,14 +147,14 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 	fileURL := file.Link(b.api.Token)
 	resp, err := http.Get(fileURL)
 	if err != nil {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedDownload, err))
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
 		return
 	}
 	defer resp.Body.Close()
 
 	imageData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedReadImage, err))
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedReadImage, err))
 		return
 	}
 
@@ -176,7 +177,7 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 
 	item, err := b.pipeline.Process(ctx, raw)
 	if err != nil {
-		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedSaveImage, err))
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedSaveImage, err))
 		return
 	}
 
@@ -198,9 +199,9 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 				tgbotapi.NewInlineKeyboardButtonURL(l.Get(i18n.MsgViewInApp), b.webAppURL+"?item="+item.ID),
 			),
 		)
-		b.sendWithKeyboard(msg.Chat.ID, response, keyboard)
+		b.editWithKeyboard(msg.Chat.ID, sentMsg.MessageID, response, keyboard)
 	} else {
-		b.send(msg.Chat.ID, response)
+		b.edit(msg.Chat.ID, sentMsg.MessageID, response)
 	}
 }
 

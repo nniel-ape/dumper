@@ -92,6 +92,29 @@ func (b *Bot) sendWithKeyboard(chatID int64, text string, keyboard tgbotapi.Inli
 	}
 }
 
+func (b *Bot) sendAndReturn(chatID int64, text string) (tgbotapi.Message, error) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+	return b.api.Send(msg)
+}
+
+func (b *Bot) edit(chatID int64, messageID int, text string) {
+	msg := tgbotapi.NewEditMessageText(chatID, messageID, text)
+	msg.ParseMode = "HTML"
+	if _, err := b.api.Send(msg); err != nil {
+		slog.Error("failed to edit message", "error", err)
+	}
+}
+
+func (b *Bot) editWithKeyboard(chatID int64, messageID int, text string, keyboard tgbotapi.InlineKeyboardMarkup) {
+	msg := tgbotapi.NewEditMessageText(chatID, messageID, text)
+	msg.ParseMode = "HTML"
+	msg.ReplyMarkup = &keyboard
+	if _, err := b.api.Send(msg); err != nil {
+		slog.Error("failed to edit message", "error", err)
+	}
+}
+
 // getUserLang returns a Localizer for the user's preferred language.
 // Priority: memory cache -> DB settings -> Telegram language code -> English default.
 func (b *Bot) getUserLang(userID int64, telegramLangCode string) *i18n.Localizer {

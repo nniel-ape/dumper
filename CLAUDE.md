@@ -108,6 +108,31 @@ All `/api/*` routes require `X-Telegram-Init-Data` header:
 - `POST /api/ask` - Q&A (not implemented)
 - `GET /api/export` - Obsidian export (not implemented in handler)
 
+## Mini App Development
+
+The `mini-app/` directory contains the Telegram Mini App frontend (Vite + React + TypeScript + Tailwind).
+
+```bash
+cd mini-app
+
+# Install dependencies
+bun install
+
+# Development server
+bun run dev
+
+# Build for production
+bun run build
+
+# Lint
+bun run lint
+
+# Preview production build
+bun run preview
+```
+
+**IMPORTANT**: Always use `bun` instead of `npm` or `yarn` for package management.
+
 ## Current Status
 
 MVP backend is functional. Missing:

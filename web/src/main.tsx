@@ -5,9 +5,13 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import App from './App'
 import './index.css'
 import { initTelegramApp } from './lib/telegram'
+import { initializeTheme } from './hooks/useTheme'
 
 // Initialize Telegram SDK
 initTelegramApp()
+
+// Initialize theme (respects localStorage preference, falls back to Telegram/system)
+initializeTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,8 +25,8 @@ const queryClient = new QueryClient({
 
 function LoadingFallback() {
   return (
-    <div className="h-screen flex items-center justify-center bg-tg-bg">
-      <div className="animate-spin rounded-full h-8 w-8 border-2 border-tg-button border-t-transparent" />
+    <div className="h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent" />
     </div>
   )
 }

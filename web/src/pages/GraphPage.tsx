@@ -76,6 +76,7 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       animated: rel.strength > 0.7,
       style: {
         strokeWidth: Math.max(1, rel.strength * 3),
+        stroke: 'hsl(var(--accent) / 0.5)',
         opacity: 0.6,
       },
     }))
@@ -118,7 +119,13 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
+      {/* Aurora glow behind graph */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-50" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-50" />
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -131,25 +138,15 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
         maxZoom={2}
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
       >
-        <Background color="var(--tg-theme-hint-color)" gap={20} />
+        <Background color="hsl(var(--muted-foreground) / 0.2)" gap={20} />
         <Controls
           showInteractive={false}
-          className="bg-tg-bg border border-tg-hint/20 rounded-lg"
+          className="glass-card border-glass-border"
         />
         <MiniMap
-          nodeColor={(n) => {
-            const item = n.data?.item as Item | undefined
-            if (item?.tags?.[0]) {
-              let hash = 0
-              for (let i = 0; i < item.tags[0].length; i++) {
-                hash = item.tags[0].charCodeAt(i) + ((hash << 5) - hash)
-              }
-              const hue = Math.abs(hash % 360)
-              return `hsl(${hue}, 60%, 70%)`
-            }
-            return 'var(--tg-theme-secondary-bg-color)'
-          }}
-          className="bg-tg-bg border border-tg-hint/20 rounded-lg"
+          nodeColor={() => 'hsl(var(--accent))'}
+          className="glass-card border-glass-border"
+          maskColor="hsl(var(--background) / 0.8)"
         />
       </ReactFlow>
     </div>

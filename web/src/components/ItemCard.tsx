@@ -47,20 +47,21 @@ export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
         }
       }}
       className={cn(
-        'p-4 border-b border-tg-hint/20 active:bg-tg-secondary-bg transition-colors',
+        'mx-4 my-2 p-4 glass-card transition-all duration-200',
+        'hover:shadow-glass active:scale-[0.99]',
         onClick && 'cursor-pointer'
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-tg-secondary-bg p-2 shrink-0">
-          <Icon className="h-4 w-4 text-tg-hint" />
+        <div className="rounded-lg bg-accent-muted p-2 shrink-0">
+          <Icon className="h-4 w-4 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm leading-tight mb-1 line-clamp-2">
+          <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2 text-foreground">
             {item.title || 'Untitled'}
           </h3>
           {item.summary && (
-            <p className="text-xs text-tg-hint line-clamp-2 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
               {item.summary}
             </p>
           )}
@@ -80,11 +81,11 @@ export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
               />
             ))}
             {item.tags.length > 3 && (
-              <span className="text-xs text-tg-hint">
+              <span className="text-xs text-muted-foreground">
                 +{item.tags.length - 3}
               </span>
             )}
-            <span className="text-xs text-tg-hint ml-auto">
+            <span className="text-xs text-muted-foreground ml-auto font-mono">
               {formatDate(item.created_at)}
             </span>
           </div>

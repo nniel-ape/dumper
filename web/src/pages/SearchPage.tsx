@@ -55,9 +55,9 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Search input */}
-      <div className="p-4 border-b border-tg-hint/20">
+      <div className="p-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tg-hint" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             ref={inputRef}
             type="text"
@@ -69,7 +69,7 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
           {query && (
             <button
               onClick={handleClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-tg-hint hover:text-tg-text"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -81,7 +81,7 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
       <div className="flex-1 overflow-y-auto">
         {/* AI Answer */}
         {showAI && (askMutation.isPending || aiResponse) && (
-          <div className="pt-4">
+          <div className="px-4 pt-2">
             <AIAnswerCard
               response={aiResponse || { answer: '', sources: [] }}
               isLoading={askMutation.isPending}
@@ -94,9 +94,9 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
         {isSearching && <ItemsFeedSkeleton count={3} />}
 
         {hasResults && (
-          <div>
+          <div className="pt-2">
             {!showAI && (
-              <p className="px-4 py-2 text-xs text-tg-hint">
+              <p className="px-4 py-2 text-xs text-muted-foreground font-medium">
                 {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -117,8 +117,10 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
         {/* Initial state */}
         {!debouncedQuery && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Search className="h-12 w-12 text-tg-hint/50 mb-4" />
-            <p className="text-sm text-tg-hint">
+            <div className="rounded-full bg-accent-muted p-4 mb-4">
+              <Search className="h-8 w-8 text-accent" />
+            </div>
+            <p className="text-sm text-muted-foreground">
               Search your vault or ask a question
             </p>
           </div>

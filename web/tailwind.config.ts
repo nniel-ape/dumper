@@ -6,26 +6,21 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['Roboto Mono', 'ui-monospace', 'monospace'],
+      },
       colors: {
-        // Telegram theme colors
-        tg: {
-          bg: 'var(--tg-theme-bg-color, #ffffff)',
-          'secondary-bg': 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
-          text: 'var(--tg-theme-text-color, #000000)',
-          hint: 'var(--tg-theme-hint-color, #999999)',
-          link: 'var(--tg-theme-link-color, #2481cc)',
-          button: 'var(--tg-theme-button-color, #2481cc)',
-          'button-text': 'var(--tg-theme-button-text-color, #ffffff)',
-          'header-bg': 'var(--tg-theme-header-bg-color, #ffffff)',
-          accent: 'var(--tg-theme-accent-text-color, #2481cc)',
-          destructive: 'var(--tg-theme-destructive-text-color, #ff3b30)',
-        },
-        // shadcn colors
+        // Aurora Glass colors
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        surface: 'hsl(var(--surface))',
+        'surface-elevated': 'hsl(var(--surface-elevated))',
+        glass: 'hsl(var(--glass))',
+        'glass-border': 'hsl(var(--glass-border))',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -44,6 +39,8 @@ export default {
         },
         accent: {
           DEFAULT: 'hsl(var(--accent))',
+          light: 'hsl(var(--accent-light))',
+          muted: 'hsl(var(--accent-muted))',
           foreground: 'hsl(var(--accent-foreground))',
         },
         popover: {
@@ -54,11 +51,61 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Aurora orb colors
+        aurora: {
+          1: 'hsl(var(--aurora-1))',
+          2: 'hsl(var(--aurora-2))',
+          3: 'hsl(var(--aurora-3))',
+        },
+        // Text semantic colors
+        'text-primary': 'hsl(var(--text-primary))',
+        'text-secondary': 'hsl(var(--text-secondary))',
+        'text-muted': 'hsl(var(--text-muted))',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)',
+        '2xl': 'calc(var(--radius) + 8px)',
+      },
+      backdropBlur: {
+        xs: '2px',
+        '2xl': '40px',
+        '3xl': '64px',
+      },
+      boxShadow: {
+        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
+        'glass-inset': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.06)',
+        'glow': '0 0 20px hsl(var(--accent) / 0.3)',
+        'glow-lg': '0 0 40px hsl(var(--accent) / 0.4)',
+      },
+      keyframes: {
+        'aurora-float': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(30px, -20px) scale(1.05)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+        },
+        'shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'aurora-float': 'aurora-float 20s ease-in-out infinite',
+        'aurora-float-delayed': 'aurora-float 20s ease-in-out 5s infinite',
+        'aurora-float-slow': 'aurora-float 25s ease-in-out 10s infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'fade-in': 'fade-in 0.3s ease-out',
+        'slide-up': 'slide-up 0.4s ease-out',
       },
     },
   },

@@ -31,11 +31,11 @@ export function EmptyState({ type, query }: EmptyStateProps) {
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="rounded-full bg-tg-secondary-bg p-4 mb-4">
-        <Icon className="h-8 w-8 text-tg-hint" />
+      <div className="rounded-full bg-accent-muted p-4 mb-4">
+        <Icon className="h-8 w-8 text-accent" />
       </div>
-      <h3 className="text-lg font-medium mb-1">{config.title}</h3>
-      <p className="text-sm text-tg-hint max-w-xs">
+      <h3 className="text-lg font-semibold mb-1 text-foreground">{config.title}</h3>
+      <p className="text-sm text-muted-foreground max-w-xs">
         {type === 'search' && query
           ? `No results for "${query}"`
           : config.description}

@@ -15,15 +15,15 @@ export function AIAnswerCard({ response, isLoading, onSourceClick }: AIAnswerCar
 
   if (isLoading) {
     return (
-      <Card className="mx-4 mb-4 bg-gradient-to-br from-tg-button/10 to-tg-button/5">
+      <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-tg-button animate-pulse" />
-            <span className="text-sm font-medium text-tg-button">Thinking...</span>
+            <Sparkles className="h-4 w-4 text-accent animate-pulse" />
+            <span className="text-sm font-semibold text-accent">Thinking...</span>
           </div>
           <div className="space-y-2">
-            <div className="h-4 bg-tg-hint/20 rounded animate-pulse" />
-            <div className="h-4 bg-tg-hint/20 rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-accent/20 rounded animate-pulse" />
+            <div className="h-4 bg-accent/20 rounded animate-pulse w-3/4" />
           </div>
         </CardContent>
       </Card>
@@ -31,20 +31,20 @@ export function AIAnswerCard({ response, isLoading, onSourceClick }: AIAnswerCar
   }
 
   return (
-    <Card className="mx-4 mb-4 bg-gradient-to-br from-tg-button/10 to-tg-button/5">
+    <Card className="border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="h-4 w-4 text-tg-button" />
-          <span className="text-sm font-medium text-tg-button">AI Answer</span>
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="text-sm font-semibold text-accent">AI Answer</span>
         </div>
 
-        <p className="text-sm leading-relaxed mb-3">{response.answer}</p>
+        <p className="text-sm leading-relaxed mb-3 text-foreground">{response.answer}</p>
 
         {response.sources.length > 0 && (
           <div>
             <button
               onClick={() => setShowSources(!showSources)}
-              className="flex items-center gap-1 text-xs text-tg-hint hover:text-tg-text"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {showSources ? (
                 <ChevronUp className="h-3 w-3" />
@@ -55,7 +55,7 @@ export function AIAnswerCard({ response, isLoading, onSourceClick }: AIAnswerCar
             </button>
 
             {showSources && (
-              <div className="mt-2 -mx-4 border-t border-tg-hint/20">
+              <div className="mt-2 -mx-4 border-t border-glass-border">
                 {response.sources.map((result) => (
                   <ItemCard
                     key={result.item.id}

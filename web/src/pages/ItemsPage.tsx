@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { X } from 'lucide-react'
 import { useItems } from '@/hooks'
 import { ItemCard } from '@/components/ItemCard'
 import { ItemsFeedSkeleton } from '@/components/LoadingSkeleton'
@@ -96,34 +97,36 @@ export function ItemsPage({ filterTag, onTagClick, onItemSelect }: ItemsPageProp
       {/* Pull to refresh indicator */}
       {isRefreshing && (
         <div className="flex justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-tg-button border-t-transparent" />
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent border-t-transparent" />
         </div>
       )}
 
       {/* Filter indicator */}
       {filterTag && (
-        <div className="px-4 py-2 bg-tg-secondary-bg border-b border-tg-hint/20 flex items-center justify-between">
-          <span className="text-sm">
-            Filtered by: <strong>{filterTag}</strong>
+        <div className="mx-4 mt-2 px-3 py-2 glass-card flex items-center justify-between">
+          <span className="text-sm text-foreground">
+            Filtered by: <strong className="text-accent">{filterTag}</strong>
           </span>
           <button
             onClick={() => onTagClick?.('')}
-            className="text-sm text-tg-link"
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
           >
-            Clear
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {/* Items list */}
-      {items.map((item) => (
-        <ItemCard
-          key={item.id}
-          item={item}
-          onClick={() => handleItemClick(item)}
-          onTagClick={onTagClick}
-        />
-      ))}
+      <div className="pt-2">
+        {items.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={item}
+            onClick={() => handleItemClick(item)}
+            onTagClick={onTagClick}
+          />
+        ))}
+      </div>
 
       {/* Loading more indicator */}
       {isFetchingNextPage && (
@@ -134,7 +137,7 @@ export function ItemsPage({ filterTag, onTagClick, onItemSelect }: ItemsPageProp
 
       {/* End of list */}
       {!hasNextPage && items.length > 0 && (
-        <p className="text-center text-sm text-tg-hint py-8">
+        <p className="text-center text-sm text-muted-foreground py-8">
           No more items
         </p>
       )}

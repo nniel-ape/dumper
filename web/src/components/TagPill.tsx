@@ -6,25 +6,6 @@ interface TagPillProps {
   className?: string
 }
 
-// Generate consistent color from tag name
-function tagToColor(tag: string): string {
-  let hash = 0
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const hue = Math.abs(hash % 360)
-  return `hsl(${hue}, 70%, 85%)`
-}
-
-function tagToTextColor(tag: string): string {
-  let hash = 0
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const hue = Math.abs(hash % 360)
-  return `hsl(${hue}, 70%, 25%)`
-}
-
 export function TagPill({ tag, onClick, className }: TagPillProps) {
   return (
     <span
@@ -38,13 +19,12 @@ export function TagPill({ tag, onClick, className }: TagPillProps) {
       }}
       className={cn(
         'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        onClick && 'cursor-pointer hover:opacity-80 active:opacity-60',
+        'bg-accent-muted text-accent backdrop-blur-sm',
+        'border border-accent/20',
+        'transition-all duration-200',
+        onClick && 'cursor-pointer hover:bg-accent/20 hover:border-accent/30 active:scale-95',
         className
       )}
-      style={{
-        backgroundColor: tagToColor(tag),
-        color: tagToTextColor(tag),
-      }}
     >
       {tag}
     </span>

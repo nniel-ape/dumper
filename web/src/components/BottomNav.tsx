@@ -25,17 +25,17 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-tg-bg border-t border-tg-hint/20 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 backdrop-blur-xl bg-glass border-t border-glass-border safe-area-bottom will-change-blur">
       <div className="flex justify-around items-center h-14">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => handleTabClick(id)}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 h-full transition-colors',
+              'flex flex-col items-center justify-center flex-1 h-full transition-all duration-200',
               activeTab === id
-                ? 'text-tg-button'
-                : 'text-tg-hint active:text-tg-text'
+                ? 'text-accent'
+                : 'text-muted-foreground hover:text-foreground active:text-foreground'
             )}
           >
             <Icon className="h-5 w-5 mb-0.5" />

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { BottomNav, type TabId } from '@/components/BottomNav'
 import { ItemDetail } from '@/components/ItemDetail'
+import { AuroraBackground } from '@/components/AuroraBackground'
 import { ItemsPage } from '@/pages/ItemsPage'
 import { SearchPage } from '@/pages/SearchPage'
 import { GraphPage } from '@/pages/GraphPage'
@@ -41,10 +42,14 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-tg-bg text-tg-text">
+    <div className="h-screen flex flex-col bg-background text-foreground">
+      <AuroraBackground />
+
       {/* Header */}
-      <header className="shrink-0 px-4 py-3 border-b border-tg-hint/20">
-        <h1 className="text-lg font-semibold">Dumper</h1>
+      <header className="shrink-0 px-4 py-3 glass-elevated border-b border-glass-border">
+        <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">
+          Dumper
+        </h1>
       </header>
 
       {/* Content */}

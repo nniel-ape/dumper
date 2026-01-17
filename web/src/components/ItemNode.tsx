@@ -7,23 +7,12 @@ export interface ItemNodeData {
   connectionCount: number
 }
 
-function tagToColor(tag: string): string {
-  let hash = 0
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const hue = Math.abs(hash % 360)
-  return `hsl(${hue}, 60%, 70%)`
-}
-
 interface ItemNodeProps {
   data: ItemNodeData
 }
 
 export const ItemNode = memo(function ItemNode({ data }: ItemNodeProps) {
   const { item, connectionCount } = data
-  const primaryTag = item.tags[0]
-  const bgColor = primaryTag ? tagToColor(primaryTag) : 'var(--tg-theme-secondary-bg-color)'
 
   // Size based on connection count
   const size = Math.min(80, 40 + connectionCount * 5)
@@ -32,16 +21,17 @@ export const ItemNode = memo(function ItemNode({ data }: ItemNodeProps) {
     <>
       <Handle type="target" position={Position.Top} className="opacity-0" />
       <div
-        className="rounded-lg p-2 shadow-md border border-white/20 cursor-pointer transition-transform hover:scale-105"
+        className="rounded-xl p-2 cursor-pointer transition-all duration-200 hover:scale-105 backdrop-blur-md border shadow-lg"
         style={{
-          backgroundColor: bgColor,
           width: size,
           minHeight: size,
+          background: 'hsl(var(--glass))',
+          borderColor: 'hsl(var(--accent) / 0.3)',
+          boxShadow: '0 4px 20px hsl(var(--accent) / 0.15)',
         }}
       >
         <p
-          className="text-[10px] font-medium leading-tight text-center line-clamp-3"
-          style={{ color: 'rgba(0,0,0,0.8)' }}
+          className="text-[10px] font-medium leading-tight text-center line-clamp-3 text-foreground"
         >
           {item.title || 'Untitled'}
         </p>

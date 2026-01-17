@@ -202,3 +202,60 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* React Flow Controls - Glass styling */
+.react-flow-controls {
+  @apply backdrop-blur-xl rounded-xl overflow-hidden;
+  background: hsl(var(--surface)) !important;
+  border: 1px solid hsl(var(--glass-border)) !important;
+  box-shadow: 0 4px 20px hsl(var(--accent) / 0.1) !important;
+}
+
+.react-flow-controls button {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid hsl(var(--glass-border)) !important;
+  color: hsl(var(--foreground)) !important;
+  transition: background 0.2s ease;
+}
+
+.react-flow-controls button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow-controls button:hover {
+  background: hsl(var(--accent-muted)) !important;
+}
+
+.react-flow-controls button svg {
+  fill: hsl(var(--foreground)) !important;
+}
+
+/* React Flow MiniMap - Glass styling */
+.react-flow-minimap {
+  @apply backdrop-blur-xl overflow-hidden;
+  background: hsl(var(--surface)) !important;
+  border: 1px solid hsl(var(--glass-border)) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 20px hsl(var(--accent) / 0.1) !important;
+}
+
+.react-flow-minimap svg {
+  border-radius: 0.75rem !important;
+}
+
+/* React Flow Edge hover states */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: hsl(var(--accent-light)) !important;
+  stroke-width: 3px !important;
+}
+
+/* React Flow node selection */
+.react-flow__node.selected {
+  z-index: 10 !important;
+}
+
+/* Hide React Flow attribution */
+.react-flow__attribution {
+  display: none !important;
+}

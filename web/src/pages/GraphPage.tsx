@@ -2,10 +2,12 @@ import { useMemo, useCallback, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
+  MarkerType,
   type Node,
   type Edge,
   type NodeTypes,
@@ -21,6 +23,22 @@ import type { Item } from '@/api'
 
 const nodeTypes: NodeTypes = {
   item: ItemNode,
+}
+
+// Type-based colors for minimap (must match ItemNode colors)
+const minimapTypeColors: Record<string, string> = {
+  link: 'hsl(239 84% 74%)',
+  note: 'hsl(142 76% 55%)',
+  image: 'hsl(330 81% 60%)',
+  search: 'hsl(258 90% 66%)',
+}
+
+// Default edge marker
+const defaultMarker = {
+  type: MarkerType.ArrowClosed,
+  width: 16,
+  height: 16,
+  color: 'hsl(239 84% 74% / 0.6)',
 }
 
 interface GraphPageProps {
@@ -51,16 +69,24 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       )
     })
 
-    // Position nodes in a grid (simple layout)
-    const cols = Math.ceil(Math.sqrt(graphNodes.length)) || 1
-    const spacing = 150
+    // Sort nodes by connection count (hubs first for better layout)
+    const sortedNodes = [...graphNodes].sort((a, b) => {
+      const countA = connectionCounts.get(a.id) || 0
+      const countB = connectionCounts.get(b.id) || 0
+      return countB - countA
+    })
 
-    const nodes: Node[] = graphNodes.map((item, index) => ({
+    // Position nodes in a grid with wider spacing
+    const cols = Math.ceil(Math.sqrt(sortedNodes.length)) || 1
+    const spacingX = 240
+    const spacingY = 160
+
+    const nodes: Node[] = sortedNodes.map((item, index) => ({
       id: item.id,
       type: 'item',
       position: {
-        x: (index % cols) * spacing + Math.random() * 30,
-        y: Math.floor(index / cols) * spacing + Math.random() * 30,
+        x: (index % cols) * spacingX,
+        y: Math.floor(index / cols) * spacingY,
       },
       data: {
         item,
@@ -72,12 +98,16 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       id: `${rel.source_id}-${rel.target_id}`,
       source: rel.source_id,
       target: rel.target_id,
+      type: 'smoothstep',
       label: rel.relation_type,
       animated: rel.strength > 0.7,
+      markerEnd: defaultMarker,
       style: {
-        strokeWidth: Math.max(1, rel.strength * 3),
-        stroke: 'hsl(var(--accent) / 0.5)',
-        opacity: 0.6,
+        strokeWidth: Math.max(1.5, rel.strength * 2.5),
+        stroke: 'hsl(239 84% 74% / 0.6)',
+      },
+      pathOptions: {
+        borderRadius: 20,
       },
     }))
 
@@ -101,6 +131,13 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
     [data, onItemSelect]
   )
 
+  // MiniMap node color based on item type
+  const getMinimapNodeColor = useCallback((node: Node) => {
+    const item = node.data?.item as Item | undefined
+    const type = item?.type?.toLowerCase() || 'link'
+    return minimapTypeColors[type] || minimapTypeColors.link
+  }, [])
+
   if (isLoading) {
     return <GraphSkeleton />
   }
@@ -122,8 +159,8 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
     <div className="h-full w-full relative">
       {/* Aurora glow behind graph */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-50" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-50" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-40" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-40" />
       </div>
 
       <ReactFlow
@@ -138,15 +175,22 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
         maxZoom={2}
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
       >
-        <Background color="hsl(var(--muted-foreground) / 0.2)" gap={20} />
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="hsl(var(--muted-foreground) / 0.08)"
+          gap={24}
+          size={1}
+        />
         <Controls
           showInteractive={false}
-          className="glass-card border-glass-border"
+          className="react-flow-controls"
         />
         <MiniMap
-          nodeColor={() => 'hsl(var(--accent))'}
-          className="glass-card border-glass-border"
-          maskColor="hsl(var(--background) / 0.8)"
+          nodeColor={getMinimapNodeColor}
+          className="react-flow-minimap"
+          maskColor="hsl(var(--background) / 0.85)"
+          pannable
+          zoomable
         />
       </ReactFlow>
     </div>

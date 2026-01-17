@@ -36,17 +36,20 @@ func (p *Pipeline) Process(ctx context.Context, raw RawContent) (*store.Item, er
 		return nil, fmt.Errorf("get vault: %w", err)
 	}
 
+	// Fetch existing tags for LLM context (ignore error, empty list is fine)
+	existingTags, _ := vault.GetAllTags()
+
 	var item *store.Item
 
 	switch raw.Type {
 	case ContentTypeLink:
-		item, err = p.processLink(ctx, raw)
+		item, err = p.processLink(ctx, raw, existingTags)
 	case ContentTypeNote:
-		item, err = p.processNote(ctx, raw)
+		item, err = p.processNote(ctx, raw, existingTags)
 	case ContentTypeImage:
-		item, err = p.processImage(ctx, raw)
+		item, err = p.processImage(ctx, raw, existingTags)
 	case ContentTypeSearch:
-		item, err = p.processSearch(ctx, raw)
+		item, err = p.processSearch(ctx, raw, existingTags)
 	default:
 		return nil, fmt.Errorf("unknown content type: %s", raw.Type)
 	}
@@ -64,7 +67,7 @@ func (p *Pipeline) Process(ctx context.Context, raw RawContent) (*store.Item, er
 	return item, nil
 }
 
-func (p *Pipeline) processLink(ctx context.Context, raw RawContent) (*store.Item, error) {
+func (p *Pipeline) processLink(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
 	extracted, err := p.extractor.Extract(ctx, raw.URL)
 	if err != nil {
 		slog.Warn("extraction failed, using basic info", "url", raw.URL, "error", err)
@@ -79,7 +82,7 @@ func (p *Pipeline) processLink(ctx context.Context, raw RawContent) (*store.Item
 	}
 
 	// Process with LLM
-	processed, err := p.llmClient.ProcessContent(ctx, "web article", extracted.Content, raw.Language)
+	processed, err := p.llmClient.ProcessContent(ctx, "web article", extracted.Content, raw.Language, existingTags)
 	if err != nil {
 		slog.Warn("LLM processing failed", "error", err)
 		return &store.Item{
@@ -103,8 +106,8 @@ func (p *Pipeline) processLink(ctx context.Context, raw RawContent) (*store.Item
 	}, nil
 }
 
-func (p *Pipeline) processNote(ctx context.Context, raw RawContent) (*store.Item, error) {
-	processed, err := p.llmClient.ProcessContent(ctx, "note", raw.Text, raw.Language)
+func (p *Pipeline) processNote(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
+	processed, err := p.llmClient.ProcessContent(ctx, "note", raw.Text, raw.Language, existingTags)
 	if err != nil {
 		slog.Warn("LLM processing failed", "error", err)
 		// Fallback: save as-is
@@ -129,7 +132,7 @@ func (p *Pipeline) processNote(ctx context.Context, raw RawContent) (*store.Item
 	}, nil
 }
 
-func (p *Pipeline) processImage(ctx context.Context, raw RawContent) (*store.Item, error) {
+func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
 	itemID := uuid.NewString()
 
 	// Create images directory under user folder
@@ -150,7 +153,7 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent) (*store.Ite
 
 	// If caption exists, process through LLM
 	if raw.Caption != "" {
-		processed, err := p.llmClient.ProcessContent(ctx, "note with image", raw.Caption, raw.Language)
+		processed, err := p.llmClient.ProcessContent(ctx, "note with image", raw.Caption, raw.Language, existingTags)
 		if err != nil {
 			slog.Warn("LLM processing failed for image caption", "error", err)
 			// Fallback: use caption as-is
@@ -195,7 +198,7 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent) (*store.Ite
 	}, nil
 }
 
-func (p *Pipeline) processSearch(ctx context.Context, raw RawContent) (*store.Item, error) {
+func (p *Pipeline) processSearch(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
 	topic := raw.Text
 
 	// Search DuckDuckGo
@@ -212,7 +215,7 @@ func (p *Pipeline) processSearch(ctx context.Context, raw RawContent) (*store.It
 	}
 
 	// Summarize with LLM
-	processed, err := p.llmClient.SummarizeSearchResults(ctx, topic, searchText, raw.Language)
+	processed, err := p.llmClient.SummarizeSearchResults(ctx, topic, searchText, raw.Language, existingTags)
 	if err != nil {
 		slog.Warn("LLM summarization failed", "error", err)
 		// Fallback: save raw search result

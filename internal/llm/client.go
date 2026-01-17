@@ -76,13 +76,14 @@ func (c *Client) Chat(ctx context.Context, messages []Message) (string, error) {
 	return chatResp.Choices[0].Message.Content, nil
 }
 
-func (c *Client) ProcessContent(ctx context.Context, contentType, content, lang string) (*ProcessedContent, error) {
+func (c *Client) ProcessContent(ctx context.Context, contentType, content, lang string, existingTags []string) (*ProcessedContent, error) {
 	// Truncate content if too long (preserve first ~8000 chars)
 	if len(content) > 8000 {
 		content = content[:8000] + "..."
 	}
 
-	prompt := fmt.Sprintf(ProcessContentPrompt, contentType, content)
+	tagsContext := formatExistingTags(existingTags)
+	prompt := fmt.Sprintf(ProcessContentPrompt, tagsContext, contentType, content)
 
 	// Add language instruction for non-English
 	if lang == "ru" {
@@ -149,8 +150,9 @@ func (c *Client) FindRelationships(ctx context.Context, title, summary string, t
 }
 
 // SummarizeSearchResults creates a knowledge entry from search results about a topic.
-func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResults, lang string) (*ProcessedContent, error) {
-	prompt := fmt.Sprintf(SummarizeSearchPrompt, topic, searchResults)
+func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResults, lang string, existingTags []string) (*ProcessedContent, error) {
+	tagsContext := formatExistingTags(existingTags)
+	prompt := fmt.Sprintf(SummarizeSearchPrompt, tagsContext, topic, searchResults)
 
 	// Add language instruction for non-English
 	if lang == "ru" {
@@ -176,4 +178,13 @@ func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResult
 		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, response)
 	}
 	return &result, nil
+}
+
+// formatExistingTags formats existing tags for inclusion in prompts.
+// Returns empty string if no tags, otherwise a formatted context block.
+func formatExistingTags(tags []string) string {
+	if len(tags) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("\nExisting tags in user's knowledge base (prefer reusing when appropriate):\n%s\n", strings.Join(tags, ", "))
 }

@@ -1,7 +1,7 @@
 package llm
 
 const ProcessContentPrompt = `Analyze the following content and extract structured information.
-
+%s
 Content Type: %s
 Content:
 ---
@@ -19,6 +19,7 @@ Respond with ONLY valid JSON (no markdown, no explanation):
 Rules:
 - Tags should be lowercase, single words or short phrases
 - Generate 3-7 relevant tags
+- PREFER reusing existing tags when they fit the content (consistency is valuable)
 - Summary should be informative but concise
 - Related topics help build knowledge graph connections`
 
@@ -58,7 +59,7 @@ Answer:`
 
 const SummarizeSearchPrompt = `You are a knowledge assistant. The user searched for a topic and we found some information.
 Create a helpful knowledge entry about this topic.
-
+%s
 Topic: %s
 
 Search Results:
@@ -78,5 +79,6 @@ Rules:
 - If search results are empty or unhelpful, use your general knowledge about the topic
 - Tags should be lowercase, relevant to the topic
 - Generate 3-5 relevant tags
+- PREFER reusing existing tags when they fit the topic (consistency is valuable)
 - Summary should explain what this topic is and why it's notable
 - Include the most important facts or uses`

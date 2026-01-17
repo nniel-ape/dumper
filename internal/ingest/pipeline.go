@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/nerdneilsfield/dumper/internal/llm"
@@ -145,22 +146,50 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent) (*store.Ite
 		return nil, fmt.Errorf("write image: %w", err)
 	}
 
-	// Use caption as title if available
-	title := "Image"
-	if raw.Caption != "" {
-		title = raw.Caption
-		if len(title) > 100 {
-			title = title[:100] + "..."
-		}
-	}
-
 	slog.Info("saved image", "id", itemID, "path", imagePath, "size", len(raw.ImageData))
 
+	// If caption exists, process through LLM
+	if raw.Caption != "" {
+		processed, err := p.llmClient.ProcessContent(ctx, "note with image", raw.Caption, raw.Language)
+		if err != nil {
+			slog.Warn("LLM processing failed for image caption", "error", err)
+			// Fallback: use caption as-is
+			title := raw.Caption
+			if len(title) > 100 {
+				title = title[:100] + "..."
+			}
+			return &store.Item{
+				ID:        itemID,
+				Type:      store.ItemTypeImage,
+				Title:     title,
+				Content:   raw.Caption,
+				ImagePath: imagePath,
+				Tags:      []string{"image", "uncategorized"},
+			}, nil
+		}
+
+		// Ensure "image" tag is always present
+		tags := processed.Tags
+		if !slices.Contains(tags, "image") {
+			tags = append(tags, "image")
+		}
+
+		return &store.Item{
+			ID:        itemID,
+			Type:      store.ItemTypeImage,
+			Title:     processed.Title,
+			Summary:   processed.Summary,
+			Content:   raw.Caption,
+			ImagePath: imagePath,
+			Tags:      tags,
+		}, nil
+	}
+
+	// No caption: save image with minimal metadata
 	return &store.Item{
 		ID:        itemID,
 		Type:      store.ItemTypeImage,
-		Title:     title,
-		Content:   raw.Caption,
+		Title:     "Image",
 		ImagePath: imagePath,
 		Tags:      []string{"image"},
 	}, nil

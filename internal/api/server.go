@@ -48,7 +48,7 @@ func (s *Server) routes() {
 	})
 
 	// Static files for Mini App (if exists)
-	s.mux.Handle("/", http.FileServer(http.Dir("web/dist")))
+	s.mux.Handle("/", http.FileServer(http.Dir("mini-app/dist")))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -112,7 +112,7 @@ All `/api/*` routes require `X-Telegram-Init-Data` header:
 
 MVP backend is functional. Missing:
 - Unit tests
-- TG Mini App frontend (web/dist)
+- TG Mini App frontend (mini-app/dist)
 - Q&A endpoint implementation
 - Export endpoint wiring
 - Relationship inference in pipeline

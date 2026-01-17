@@ -42,7 +42,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground">
+    <div className="h-full flex flex-col bg-background text-foreground">
       <AuroraBackground />
 
       {/* Header */}
@@ -53,7 +53,7 @@ export default function App() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-hidden pb-14">
+      <main className="flex-1 min-h-0 pb-14">
         {activeTab === 'items' && (
           <ItemsPage
             filterTag={filterTag}

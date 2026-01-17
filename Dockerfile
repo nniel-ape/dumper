@@ -18,8 +18,8 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /app/dumper .
 
-# Create directories for data and web
-RUN mkdir -p /app/data /app/web/dist
+# Create directories for data and mini-app
+RUN mkdir -p /app/data /app/mini-app/dist
 
 EXPOSE 8080
 

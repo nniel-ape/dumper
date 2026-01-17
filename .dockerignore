@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Development
+.env
+.env.*
+.vscode/
+.idea/
+*.log
+
+# Data
+data/
+*.db
+
+# Mini App (built separately or copied in)
+mini-app/node_modules/
+mini-app/.vite/
+mini-app/dist/
+
+# Go
+*.exe
+*.test
+*.out
+
+# OS
+.DS_Store
+Thumbs.db

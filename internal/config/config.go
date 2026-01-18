@@ -1,25 +1,24 @@
 package config
 
 import (
-	"fmt"
-
-	"github.com/caarlos0/env/v11"
+	"github.com/jessevdk/go-flags"
 )
 
 type Config struct {
-	TelegramToken   string `env:"TELEGRAM_BOT_TOKEN,required"`
-	OpenRouterKey   string `env:"OPENROUTER_API_KEY,required"`
-	DataDir         string `env:"DATA_DIR" envDefault:"./data"`
-	HTTPPort        int    `env:"HTTP_PORT" envDefault:"8080"`
-	LogLevel        string `env:"LOG_LEVEL" envDefault:"info"`
-	OpenRouterModel string `env:"OPENROUTER_MODEL" envDefault:"anthropic/claude-3-haiku"`
-	WebAppURL       string `env:"WEBAPP_URL" envDefault:""`
+	TelegramToken   string `long:"telegram-token" env:"TELEGRAM_BOT_TOKEN" description:"Telegram bot token" required:"true"`
+	OpenRouterKey   string `long:"openrouter-key" env:"OPENROUTER_API_KEY" description:"OpenRouter API key" required:"true"`
+	DataDir         string `long:"data-dir" env:"DATA_DIR" default:"./data" description:"Data directory for SQLite databases"`
+	HTTPPort        int    `long:"http-port" env:"HTTP_PORT" default:"8080" description:"HTTP server port"`
+	LogLevel        string `long:"log-level" env:"LOG_LEVEL" default:"info" description:"Log level: debug|info|warn|error"`
+	OpenRouterModel string `long:"openrouter-model" env:"OPENROUTER_MODEL" default:"anthropic/claude-3-haiku" description:"OpenRouter model ID"`
+	WebAppURL       string `long:"webapp-url" env:"WEBAPP_URL" description:"Telegram Mini App URL"`
 }
 
 func Load() (*Config, error) {
 	cfg := &Config{}
-	if err := env.Parse(cfg); err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
+	parser := flags.NewParser(cfg, flags.Default)
+	if _, err := parser.Parse(); err != nil {
+		return nil, err
 	}
 	return cfg, nil
 }

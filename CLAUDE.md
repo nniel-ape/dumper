@@ -22,25 +22,28 @@ docker run -e TELEGRAM_BOT_TOKEN=... -e OPENROUTER_API_KEY=... dumper
 
 **IMPORTANT**: Never run `go build` directly - use `go test ./...` to verify compilation. Do not commit binary artifacts.
 
-## Environment Variables
+## Configuration
 
-Required:
-- `TELEGRAM_BOT_TOKEN` - From @BotFather
-- `OPENROUTER_API_KEY` - From openrouter.ai/keys
+Configure via CLI flags or environment variables (flags take precedence):
 
-Optional:
-- `DATA_DIR` (default: `./data`) - Where per-user SQLite databases are stored
-- `HTTP_PORT` (default: `8080`)
-- `LOG_LEVEL` (default: `info`) - debug/info/warn/error
-- `OPENROUTER_MODEL` (default: `anthropic/claude-3-haiku`)
-- `WEBAPP_URL` - TG Mini App URL for bot buttons
+| Flag | Env Var | Default | Description |
+|------|---------|---------|-------------|
+| `--telegram-token` | `TELEGRAM_BOT_TOKEN` | (required) | Telegram bot token |
+| `--openrouter-key` | `OPENROUTER_API_KEY` | (required) | OpenRouter API key |
+| `--data-dir` | `DATA_DIR` | `./data` | SQLite database directory |
+| `--http-port` | `HTTP_PORT` | `8080` | HTTP server port |
+| `--log-level` | `LOG_LEVEL` | `info` | debug/info/warn/error |
+| `--openrouter-model` | `OPENROUTER_MODEL` | `anthropic/claude-3-haiku` | LLM model |
+| `--webapp-url` | `WEBAPP_URL` | (empty) | Mini App URL |
+
+Run with `--help` to see all options.
 
 ## Architecture
 
 ```
 cmd/dumper/main.go     # Entry point - wires dependencies, runs bot + HTTP server concurrently
 internal/
-├── config/            # Environment-based config via caarlos0/env
+├── config/            # CLI/env config via jessevdk/go-flags
 ├── bot/               # Telegram bot (go-telegram-bot-api/v5)
 │   ├── bot.go         # Bot setup, update loop, routing
 │   └── handlers.go    # Command and message handlers
@@ -92,7 +95,7 @@ SQLite with FTS5 for search. Key tables:
 Uses CGO-free `modernc.org/sqlite` (not mattn/go-sqlite3). Key deps:
 - `github.com/go-telegram-bot-api/telegram-bot-api/v5`
 - `github.com/go-shiori/go-readability`
-- `github.com/caarlos0/env/v11`
+- `github.com/jessevdk/go-flags`
 - `golang.org/x/sync/errgroup`
 
 ## API Endpoints

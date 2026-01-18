@@ -46,14 +46,14 @@ export default function App() {
       <AuroraBackground />
 
       {/* Header */}
-      <header className="shrink-0 px-4 py-3 glass-elevated border-b border-glass-border">
+      <header className="shrink-0 px-4 py-3 safe-area-top glass-elevated border-b border-glass-border">
         <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">
           Dumper
         </h1>
       </header>
 
       {/* Content */}
-      <main className="flex-1 min-h-0 pb-14">
+      <main className="flex-1 min-h-0 pb-14 overflow-hidden relative">
         {activeTab === 'items' && (
           <ItemsPage
             filterTag={filterTag}

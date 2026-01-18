@@ -1,4 +1,5 @@
 .env
+.sops/deploy-key.txt
 data/
 *.db
 mini-app/dist/

@@ -19,7 +19,7 @@ RUN bun install --frozen-lockfile
 COPY mini-app/ .
 RUN bun run build
 
-# Runtime stage
+# Runtime stage (clean, no SOPS - CI/CD decrypts externally)
 FROM alpine:3.19
 
 RUN apk add --no-cache ca-certificates

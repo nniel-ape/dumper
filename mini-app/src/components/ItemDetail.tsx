@@ -102,9 +102,9 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
-      <header className="px-4 py-3 border-b border-border flex items-center gap-3">
+      <header className="shrink-0 px-4 py-3 safe-area-top border-b border-border flex items-center gap-3">
         <button
           onClick={handleBack}
           className="p-1 -ml-1 text-foreground hover:text-accent transition-colors"
@@ -134,7 +134,7 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
       </header>
 
       {/* Content */}
-      <main className="absolute top-14 bottom-0 left-0 right-0 overflow-y-auto p-4 space-y-4">
+      <main className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 safe-area-bottom">
         {/* Tags */}
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">

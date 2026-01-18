@@ -7,8 +7,8 @@ import './index.css'
 import { initTelegramApp } from './lib/telegram'
 import { initializeTheme } from './hooks/useTheme'
 
-// Initialize Telegram SDK
-initTelegramApp()
+// Initialize Telegram SDK (fire-and-forget, handles its own errors)
+initTelegramApp().catch(() => {})
 
 // Initialize theme (respects localStorage preference, falls back to Telegram/system)
 initializeTheme()

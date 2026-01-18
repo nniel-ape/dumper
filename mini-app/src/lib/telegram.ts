@@ -4,31 +4,41 @@ import {
   themeParams,
   viewport,
   backButton,
+  initData,
+  hapticFeedback as hapticFeedbackModule,
+  openLink as sdkOpenLink,
 } from '@telegram-apps/sdk-react'
 
-export function initTelegramApp() {
+let initialized = false
+
+export async function initTelegramApp(): Promise<boolean> {
+  if (initialized) return true
+
   try {
     init()
+    initialized = true
 
-    // Expand viewport
-    if (viewport.mount.isAvailable()) {
-      viewport.mount()
-      viewport.expand()
+    // Mount viewport (async with guard)
+    if (viewport.mount.isAvailable() && !viewport.isMounting()) {
+      await viewport.mount()
+      if (viewport.expand.isAvailable()) {
+        viewport.expand()
+      }
     }
 
-    // Mount theme params
-    if (themeParams.mount.isAvailable()) {
-      themeParams.mount()
+    // Mount theme params (sync version available)
+    if (themeParams.mountSync.isAvailable() && !themeParams.isMounted()) {
+      themeParams.mountSync()
     }
 
     // Mount mini app
-    if (miniApp.mount.isAvailable()) {
-      miniApp.mount()
+    if (miniApp.mount.isAvailable() && !miniApp.isMounting()) {
+      await miniApp.mount()
       miniApp.ready()
     }
 
     // Mount back button
-    if (backButton.mount.isAvailable()) {
+    if (backButton.mount.isAvailable() && !backButton.isMounted()) {
       backButton.mount()
     }
 
@@ -41,8 +51,7 @@ export function initTelegramApp() {
 
 export function getInitData(): string {
   try {
-    // @ts-expect-error - Telegram WebApp global
-    return window.Telegram?.WebApp?.initData || ''
+    return initData.raw() || ''
   } catch {
     return ''
   }
@@ -50,13 +59,13 @@ export function getInitData(): string {
 
 export function hapticFeedback(type: 'light' | 'medium' | 'heavy' | 'success' | 'error') {
   try {
-    // @ts-expect-error - Telegram WebApp global
-    const haptic = window.Telegram?.WebApp?.HapticFeedback
-    if (haptic) {
-      if (type === 'success' || type === 'error') {
-        haptic.notificationOccurred(type)
-      } else {
-        haptic.impactOccurred(type)
+    if (type === 'success' || type === 'error') {
+      if (hapticFeedbackModule.notificationOccurred.isAvailable()) {
+        hapticFeedbackModule.notificationOccurred(type)
+      }
+    } else {
+      if (hapticFeedbackModule.impactOccurred.isAvailable()) {
+        hapticFeedbackModule.impactOccurred(type)
       }
     }
   } catch {
@@ -66,9 +75,14 @@ export function hapticFeedback(type: 'light' | 'medium' | 'heavy' | 'success' | 
 
 export function openLink(url: string) {
   try {
-    // @ts-expect-error - Telegram WebApp global
-    window.Telegram?.WebApp?.openLink(url)
+    if (sdkOpenLink.isAvailable()) {
+      sdkOpenLink(url)
+      return
+    }
   } catch {
-    window.open(url, '_blank')
+    // Fall through to window.open
   }
+  window.open(url, '_blank')
 }
+
+export { backButton, themeParams }

@@ -1,15 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
+import { themeParams } from '@/lib/telegram'
 
 export type Theme = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'dumper-theme'
 
 function getSystemTheme(): 'light' | 'dark' {
-  // Check Telegram first
-  const tgTheme = (window as { Telegram?: { WebApp?: { colorScheme?: string } } }).Telegram?.WebApp?.colorScheme
-  if (tgTheme === 'dark' || tgTheme === 'light') {
-    return tgTheme
-  }
+  // Check Telegram SDK first
+  try {
+    if (themeParams.isMounted() && themeParams.isDark()) {
+      return 'dark'
+    }
+    if (themeParams.isMounted() && !themeParams.isDark()) {
+      return 'light'
+    }
+  } catch { /* SDK not available */ }
+
   // Fallback to system preference
   if (typeof window !== 'undefined' && window.matchMedia) {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'

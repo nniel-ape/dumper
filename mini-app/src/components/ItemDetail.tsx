@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ExternalLink, Trash2, Link2, FileText, Image, Search } from 'lucide-react'
 import { TagPill } from './TagPill'
-import { openLink, hapticFeedback } from '@/lib/telegram'
+import { openLink, hapticFeedback, backButton } from '@/lib/telegram'
 import { useDeleteItem } from '@/hooks'
 import type { Item } from '@/api'
 
@@ -45,13 +45,12 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
 
     window.addEventListener('popstate', handlePopState)
 
-    // Telegram back button
+    // Telegram back button (modern SDK)
+    let cleanup: (() => void) | undefined
     try {
-      // @ts-expect-error - Telegram WebApp global
-      const tg = window.Telegram?.WebApp
-      if (tg?.BackButton) {
-        tg.BackButton.show()
-        tg.BackButton.onClick(onBack)
+      if (backButton.isMounted() && backButton.show.isAvailable()) {
+        backButton.show()
+        cleanup = backButton.onClick(onBack)
       }
     } catch {
       // Not in Telegram
@@ -60,11 +59,9 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
     return () => {
       window.removeEventListener('popstate', handlePopState)
       try {
-        // @ts-expect-error - Telegram WebApp global
-        const tg = window.Telegram?.WebApp
-        if (tg?.BackButton) {
-          tg.BackButton.hide()
-          tg.BackButton.offClick(onBack)
+        cleanup?.()
+        if (backButton.isMounted() && backButton.hide.isAvailable()) {
+          backButton.hide()
         }
       } catch {
         // Not in Telegram

@@ -50,6 +50,7 @@ internal/
 ├── ingest/            # Content processing pipeline
 │   ├── source.go      # RawContent type, ContentType enum
 │   ├── extractor.go   # URL content extraction (go-readability)
+│   ├── detector.go    # Short topic detection for web search
 │   └── pipeline.go    # Extract → LLM process → Store flow
 ├── llm/               # OpenRouter API client
 │   ├── client.go      # HTTP client with Chat() and ProcessContent()
@@ -65,6 +66,10 @@ internal/
 │   ├── server.go      # Routes, CORS, mux setup
 │   ├── middleware.go  # Telegram init data validation
 │   └── handlers.go    # REST endpoints
+├── i18n/              # Internationalization (EN, RU)
+│   └── i18n.go        # Localizer with fallback to English
+├── search/            # External search integration
+│   └── duckduckgo.go  # Instant Answer API for topic enrichment
 └── export/            # Obsidian markdown export
     └── obsidian.go    # ZIP generation with YAML frontmatter
 migrations/
@@ -75,11 +80,13 @@ migrations/
 
 **Multi-tenancy**: Each Telegram user gets isolated SQLite file at `data/users/{user_id}/vault.db`. Manager uses double-checked locking for lazy vault initialization.
 
-**Processing Flow**: Message → `ingest.Pipeline.Process()` → URL extraction (readability) → LLM summarization → Store with auto-generated UUID.
+**Processing Flow**: Message → `ingest.Pipeline.Process()` → URL extraction (readability) OR topic detection (short messages trigger DuckDuckGo lookup) → LLM summarization → Store with auto-generated UUID.
 
 **Graceful Degradation**: LLM failures fall back to "uncategorized" tag. Extraction failures save URL with minimal metadata.
 
 **API Auth**: Mini App validates Telegram init data via HMAC-SHA256 (X-Telegram-Init-Data header).
+
+**i18n**: Bot messages are localized. `i18n.New(langCode)` creates a Localizer; Russian/Ukrainian/Belarusian users get Russian UI, others get English. Language preferences are cached per-user in memory.
 
 ## Database Schema
 
@@ -91,6 +98,8 @@ SQLite with FTS5 for search. Key tables:
 - `items_fts` (FTS5 virtual table with triggers for sync)
 
 ## Dependencies
+
+Requires **Go 1.25+** (uses `sync.WaitGroup.Go()` added in 1.25).
 
 Uses CGO-free `modernc.org/sqlite` (not mattn/go-sqlite3). Key deps:
 - `github.com/go-telegram-bot-api/telegram-bot-api/v5`

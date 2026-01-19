@@ -57,8 +57,44 @@ function setupDevMock() {
     },
   })
 
+  // Set dev safe area CSS variables to simulate fullscreen mode
+  // Telegram's Close button overlay is ~56px on iOS
+  const root = document.documentElement
+  root.style.setProperty('--tg-safe-area-inset-top', '0px')
+  root.style.setProperty('--tg-safe-area-inset-bottom', '0px')
+  root.style.setProperty('--tg-content-safe-area-inset-top', '56px')
+  root.style.setProperty('--tg-content-safe-area-inset-bottom', '0px')
+  root.style.setProperty('--tg-total-safe-area-top', '56px')
+  root.style.setProperty('--tg-total-safe-area-bottom', '0px')
+
   console.info('[Dev] Mocked Telegram environment for user:', devUserId)
   return true
+}
+
+// Bind Telegram safe area insets to CSS custom properties
+// This handles both device safe areas (notch, Dynamic Island) and
+// Telegram content safe areas (Close button overlay in fullscreen mode)
+function bindSafeAreaCssVars() {
+  const updateVars = () => {
+    try {
+      const device = viewport.safeAreaInsets?.() ?? { top: 0, bottom: 0, left: 0, right: 0 }
+      const content = viewport.contentSafeAreaInsets?.() ?? { top: 0, bottom: 0, left: 0, right: 0 }
+
+      const root = document.documentElement
+      root.style.setProperty('--tg-safe-area-inset-top', `${device.top}px`)
+      root.style.setProperty('--tg-safe-area-inset-bottom', `${device.bottom}px`)
+      root.style.setProperty('--tg-content-safe-area-inset-top', `${content.top}px`)
+      root.style.setProperty('--tg-content-safe-area-inset-bottom', `${content.bottom}px`)
+      root.style.setProperty('--tg-total-safe-area-top', `${device.top + content.top}px`)
+      root.style.setProperty('--tg-total-safe-area-bottom', `${device.bottom + content.bottom}px`)
+    } catch {
+      // Safe area APIs not available
+    }
+  }
+
+  updateVars()
+  // Poll for changes (fullscreen toggle, orientation changes)
+  setInterval(updateVars, 100)
 }
 
 export async function initTelegramApp(): Promise<boolean> {
@@ -87,6 +123,9 @@ export async function initTelegramApp(): Promise<boolean> {
         // Fullscreen may fail on some platforms
       }
     }
+
+    // Bind safe area insets to CSS custom properties
+    bindSafeAreaCssVars()
 
     // Mount theme params (sync version available)
     if (themeParams.mountSync.isAvailable() && !themeParams.isMounted()) {

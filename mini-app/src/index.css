@@ -4,6 +4,14 @@
 
 @layer base {
   :root {
+    /* Telegram safe area insets (set by JS, fallback to 0) */
+    --tg-safe-area-inset-top: 0px;
+    --tg-safe-area-inset-bottom: 0px;
+    --tg-content-safe-area-inset-top: 0px;
+    --tg-content-safe-area-inset-bottom: 0px;
+    --tg-total-safe-area-top: 0px;
+    --tg-total-safe-area-bottom: 0px;
+
     /* Aurora Glass - Light Mode */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
@@ -128,13 +136,14 @@
 }
 
 @layer utilities {
-  /* Safe area for mobile devices */
+  /* Safe area for Telegram Mini App (device + content safe areas)
+     Uses Telegram CSS vars set by JS, with fallback to device env() */
   .safe-area-top {
-    padding-top: env(safe-area-inset-top, 0);
+    padding-top: var(--tg-total-safe-area-top, env(safe-area-inset-top, 0px));
   }
 
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: var(--tg-total-safe-area-bottom, env(safe-area-inset-bottom, 0px));
   }
 
   /* Line clamp utilities */

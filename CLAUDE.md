@@ -145,6 +145,14 @@ bun run preview
 
 **IMPORTANT**: Always use `bun` instead of `npm` or `yarn` for package management.
 
+### iOS Safari Compatibility
+
+- ReactFlow requires explicit pixel dimensions; iOS Safari fails with `flex-1 + min-h-0 + absolute`
+- Use `position: fixed` with calc-based top/bottom to bypass flex layout bugs
+- Safe area CSS vars: `--tg-total-safe-area-top`, `--tg-total-safe-area-bottom`
+- Call `swipeBehavior.disableVertical()` to prevent swipe-to-close during graph/canvas interactions
+- Always test graph features on real iPhone in Telegram (simulators miss some WebView quirks)
+
 ## Current Status
 
 MVP backend is functional. Missing:

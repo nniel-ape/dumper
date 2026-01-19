@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/nerdneilsfield/dumper/internal/llm"
@@ -63,6 +65,9 @@ func (p *Pipeline) Process(ctx context.Context, raw RawContent) (*store.Item, er
 	}
 
 	slog.Info("processed item", "id", item.ID, "title", item.Title, "tags", item.Tags)
+
+	// Find and create relationships with existing items (best-effort)
+	p.findAndCreateRelationships(ctx, vault, item)
 
 	return item, nil
 }
@@ -242,4 +247,126 @@ func (p *Pipeline) processSearch(ctx context.Context, raw RawContent, existingTa
 		Content: searchText,
 		Tags:    processed.Tags,
 	}, nil
+}
+
+// findAndCreateRelationships finds related items and creates graph edges.
+// This is best-effort; failures are logged but never fail ingestion.
+func (p *Pipeline) findAndCreateRelationships(ctx context.Context, vault *store.VaultStore, item *store.Item) {
+	// Fetch existing items (limit 200 for reasonable LLM context)
+	allItems, err := vault.ListItems(200, 0)
+	if err != nil {
+		slog.Warn("failed to fetch items for relationships", "error", err)
+		return
+	}
+
+	// Need at least one other item to create relationships
+	if len(allItems) <= 1 {
+		return
+	}
+
+	// Select up to 50 most relevant items (by tag overlap + recency)
+	relevantItems := selectRelevantItems(allItems, item.Tags, item.ID)
+	if len(relevantItems) == 0 {
+		return
+	}
+
+	// Format items for LLM
+	itemsContext := formatItemsForLLM(relevantItems)
+
+	// Call LLM to find relationships
+	suggestions, err := p.llmClient.FindRelationships(ctx, item.Title, item.Summary, item.Tags, itemsContext)
+	if err != nil {
+		slog.Warn("LLM relationship finding failed", "error", err)
+		return
+	}
+
+	// Create relationships for strength >= 0.5
+	created := createRelationshipsFromSuggestions(vault, item.ID, suggestions)
+	if created > 0 {
+		slog.Info("created relationships", "item_id", item.ID, "count", created)
+	}
+}
+
+// formatItemsForLLM formats items for the relationship finding prompt.
+func formatItemsForLLM(items []store.Item) string {
+	var sb strings.Builder
+	for _, item := range items {
+		fmt.Fprintf(&sb, "ID: %s\nTitle: %s\nSummary: %s\nTags: %s\n\n",
+			item.ID, item.Title, item.Summary, strings.Join(item.Tags, ", "))
+	}
+	return sb.String()
+}
+
+// selectRelevantItems filters and sorts items by relevance to the new item.
+// Returns up to 50 items prioritized by tag overlap and recency.
+func selectRelevantItems(allItems []store.Item, newItemTags []string, excludeID string) []store.Item {
+	type scoredItem struct {
+		item     store.Item
+		tagScore int
+	}
+
+	// Build tag set for O(1) lookup
+	tagSet := make(map[string]struct{}, len(newItemTags))
+	for _, tag := range newItemTags {
+		tagSet[strings.ToLower(tag)] = struct{}{}
+	}
+
+	// Score items by tag overlap
+	var scored []scoredItem
+	for _, item := range allItems {
+		if item.ID == excludeID {
+			continue
+		}
+
+		tagScore := 0
+		for _, tag := range item.Tags {
+			if _, ok := tagSet[strings.ToLower(tag)]; ok {
+				tagScore++
+			}
+		}
+
+		scored = append(scored, scoredItem{item: item, tagScore: tagScore})
+	}
+
+	// Sort by tag score (desc), then by recency (already sorted desc from ListItems)
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].tagScore > scored[j].tagScore
+	})
+
+	// Take top 50
+	limit := min(50, len(scored))
+
+	result := make([]store.Item, limit)
+	for i := range limit {
+		result[i] = scored[i].item
+	}
+	return result
+}
+
+// createRelationshipsFromSuggestions creates graph edges for suggestions with strength >= 0.5.
+func createRelationshipsFromSuggestions(vault *store.VaultStore, sourceID string, suggestions []llm.RelationshipSuggestion) int {
+	created := 0
+	for _, s := range suggestions {
+		if s.Strength < 0.5 {
+			continue
+		}
+
+		rel := &store.Relationship{
+			SourceID:     sourceID,
+			TargetID:     s.TargetID,
+			RelationType: s.RelationType,
+			Strength:     s.Strength,
+		}
+
+		if err := vault.CreateRelationship(rel); err != nil {
+			slog.Warn("failed to create relationship",
+				"source", sourceID,
+				"target", s.TargetID,
+				"type", s.RelationType,
+				"error", err)
+			continue
+		}
+		created++
+	}
+	return created
 }

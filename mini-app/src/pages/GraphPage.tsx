@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from 'react'
+import { useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   ReactFlow,
   Background,
@@ -11,6 +11,7 @@ import {
   type Node,
   type Edge,
   type NodeTypes,
+  type ReactFlowInstance,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -51,7 +52,9 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
 
   // Convert graph data to React Flow format
   const { initialNodes, initialEdges } = useMemo(() => {
-    if (!data) return { initialNodes: [], initialEdges: [] }
+    if (!data) {
+      return { initialNodes: [], initialEdges: [] }
+    }
 
     const graphNodes = data.nodes ?? []
     const graphEdges = data.edges ?? []
@@ -76,17 +79,20 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       return countB - countA
     })
 
-    // Position nodes in a grid with wider spacing
+    // Position nodes in a grid with spacing
+    // Add offset to center nodes in viewport (rough estimate)
     const cols = Math.ceil(Math.sqrt(sortedNodes.length)) || 1
-    const spacingX = 240
-    const spacingY = 160
+    const spacingX = 200
+    const spacingY = 140
+    const offsetX = 50
+    const offsetY = 100 // Push down from top to avoid header overlap
 
     const nodes: Node[] = sortedNodes.map((item, index) => ({
       id: item.id,
       type: 'item',
       position: {
-        x: (index % cols) * spacingX,
-        y: Math.floor(index / cols) * spacingY,
+        x: offsetX + (index % cols) * spacingX,
+        y: offsetY + Math.floor(index / cols) * spacingY,
       },
       data: {
         item,
@@ -116,12 +122,29 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null)
 
-  // Update when data changes
+  // Update nodes/edges when data changes
   useEffect(() => {
     setNodes(initialNodes)
     setEdges(initialEdges)
   }, [initialNodes, initialEdges, setNodes, setEdges])
+
+  // Fit view when nodes are actually set (watch nodes state, not initialNodes)
+  useEffect(() => {
+    if (nodes.length > 0 && reactFlowInstance.current) {
+      // Longer delay to ensure DOM is ready after React re-render
+      const timer = setTimeout(() => {
+        reactFlowInstance.current?.fitView({ padding: 0.2, duration: 200 })
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [nodes.length])
+
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstance.current = instance
+    // fitView is handled by useEffect watching nodes state
+  }, [])
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -156,43 +179,46 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="absolute inset-0">
       {/* Aurora glow behind graph */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-40" />
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-40" />
       </div>
 
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={handleNodeClick}
-        nodeTypes={nodeTypes}
-        fitView
-        minZoom={0.1}
-        maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-      >
-        <Background
-          variant={BackgroundVariant.Dots}
-          color="hsl(var(--muted-foreground) / 0.08)"
-          gap={24}
-          size={1}
-        />
-        <Controls
-          showInteractive={false}
-          className="react-flow-controls"
-        />
-        <MiniMap
-          nodeColor={getMinimapNodeColor}
-          className="react-flow-minimap"
-          maskColor="hsl(var(--background) / 0.85)"
-          pannable
-          zoomable
-        />
-      </ReactFlow>
+      {/* ReactFlow container with explicit dimensions and z-index above aurora */}
+      <div className="absolute inset-0 z-10" style={{ width: '100%', height: '100%' }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeClick={handleNodeClick}
+          onInit={onInit}
+          nodeTypes={nodeTypes}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          minZoom={0.3}
+          maxZoom={2}
+        >
+          <Background
+            variant={BackgroundVariant.Dots}
+            color="hsl(var(--muted-foreground) / 0.08)"
+            gap={24}
+            size={1}
+          />
+          <Controls
+            showInteractive={false}
+            className="react-flow-controls"
+          />
+          <MiniMap
+            nodeColor={getMinimapNodeColor}
+            className="react-flow-minimap"
+            maskColor="hsl(var(--background) / 0.85)"
+            pannable
+            zoomable
+          />
+        </ReactFlow>
+      </div>
     </div>
   )
 }

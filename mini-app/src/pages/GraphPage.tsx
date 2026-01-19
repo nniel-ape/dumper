@@ -99,6 +99,7 @@ function GraphFlow({
       zoomOnDoubleClick={false}
       preventScrolling={true}
       className="touch-manipulation"
+      style={{ width: '100%', height: '100%' }}
     >
       <Background
         variant={BackgroundVariant.Dots}
@@ -250,23 +251,25 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
   }
 
   return (
-    <div className="absolute inset-0">
+    <div
+      style={{
+        position: 'fixed',
+        // Top: safe area + header (~48px with py-3 padding + text)
+        top: 'calc(var(--tg-total-safe-area-top, 0px) + 48px)',
+        left: 0,
+        right: 0,
+        // Bottom: BottomNav height (56px) + safe area
+        bottom: 'calc(3.5rem + var(--tg-total-safe-area-bottom, 0px))',
+      }}
+    >
       {/* Aurora glow behind graph */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-40" />
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-40" />
       </div>
 
-      {/* ReactFlow container - inset for safe areas */}
-      <div
-        className="absolute z-10"
-        style={{
-          top: 'var(--tg-content-safe-area-inset-top, env(safe-area-inset-top, 0px))',
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      >
+      {/* ReactFlow container */}
+      <div className="absolute inset-0">
         <ReactFlowProvider>
           <GraphFlow
             nodes={nodes}

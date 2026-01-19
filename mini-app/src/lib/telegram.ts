@@ -7,6 +7,7 @@ import {
   hapticFeedback as hapticFeedbackModule,
   openLink as sdkOpenLink,
   requestFullscreen,
+  swipeBehavior,
 } from '@telegram-apps/sdk-react'
 import {
   retrieveRawInitData,
@@ -122,6 +123,11 @@ export async function initTelegramApp(): Promise<boolean> {
       } catch {
         // Fullscreen may fail on some platforms
       }
+    }
+
+    // Disable vertical swipe to close mini app (iOS issue)
+    if (swipeBehavior.disableVertical.isAvailable()) {
+      swipeBehavior.disableVertical()
     }
 
     // Bind safe area insets to CSS custom properties

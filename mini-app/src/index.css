@@ -284,3 +284,32 @@
 .react-flow__attribution {
   display: none !important;
 }
+
+/* Touch device optimizations for iOS Safari */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* For React Flow - prevent all browser touch handling */
+.react-flow-touch {
+  touch-action: none;
+}
+
+/* Larger touch targets for React Flow handles on mobile */
+.react-flow .react-flow__handle {
+  width: 20px;
+  height: 20px;
+}
+
+/* Ensure handles are tappable even when visually smaller */
+@media (pointer: coarse) {
+  .react-flow .react-flow__handle {
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  /* Larger tap targets for nodes on touch devices */
+  .react-flow__node {
+    touch-action: manipulation;
+  }
+}

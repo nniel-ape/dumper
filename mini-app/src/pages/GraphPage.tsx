@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import { useGraph } from '@/hooks'
+import { useGraph, useIsMobile } from '@/hooks'
 import { ItemNode } from '@/components/ItemNode'
 import { GraphSkeleton } from '@/components/LoadingSkeleton'
 import { EmptyState } from '@/components/EmptyState'
@@ -55,6 +55,7 @@ interface GraphFlowProps {
   onEdgesChange: ReturnType<typeof useEdgesState>[2]
   onNodeClick: (_: React.MouseEvent, node: Node) => void
   getMinimapNodeColor: (node: Node) => string
+  isMobile: boolean
 }
 
 // Inner component that uses useReactFlow (must be inside ReactFlowProvider)
@@ -65,6 +66,7 @@ function GraphFlow({
   onEdgesChange,
   onNodeClick,
   getMinimapNodeColor,
+  isMobile,
 }: GraphFlowProps) {
   const { fitView } = useReactFlow()
 
@@ -73,7 +75,7 @@ function GraphFlow({
     if (nodes.length > 0) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          fitView({ padding: 0.2, duration: 200 })
+          fitView({ padding: 0.3, duration: 200 })
         })
       })
     }
@@ -89,6 +91,14 @@ function GraphFlow({
       nodeTypes={nodeTypes}
       minZoom={0.3}
       maxZoom={2}
+      // Touch device optimizations for iOS Safari
+      panOnScroll={false}
+      selectionOnDrag={false}
+      panOnDrag={true}
+      zoomOnPinch={true}
+      zoomOnDoubleClick={false}
+      preventScrolling={true}
+      className="touch-manipulation"
     >
       <Background
         variant={BackgroundVariant.Dots}
@@ -99,20 +109,34 @@ function GraphFlow({
       <Controls
         showInteractive={false}
         className="react-flow-controls"
+        position="bottom-left"
+        style={{
+          left: 16,
+          bottom: 'calc(16px + var(--tg-total-safe-area-bottom, env(safe-area-inset-bottom, 0px)))',
+        }}
       />
-      <MiniMap
-        nodeColor={getMinimapNodeColor}
-        className="react-flow-minimap"
-        maskColor="hsl(var(--background) / 0.85)"
-        pannable
-        zoomable
-      />
+      {/* Hide MiniMap on mobile for cleaner UX */}
+      {!isMobile && (
+        <MiniMap
+          nodeColor={getMinimapNodeColor}
+          className="react-flow-minimap"
+          maskColor="hsl(var(--background) / 0.85)"
+          pannable
+          zoomable
+          position="bottom-right"
+          style={{
+            right: 16,
+            bottom: 'calc(16px + var(--tg-total-safe-area-bottom, env(safe-area-inset-bottom, 0px)))',
+          }}
+        />
+      )}
     </ReactFlow>
   )
 }
 
 export function GraphPage({ onItemSelect }: GraphPageProps) {
   const { data, isLoading, isError, error, refetch } = useGraph()
+  const isMobile = useIsMobile()
 
   // Convert graph data to React Flow format
   const { initialNodes, initialEdges } = useMemo(() => {
@@ -233,8 +257,16 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-40" />
       </div>
 
-      {/* ReactFlow container with explicit dimensions and z-index above aurora */}
-      <div className="absolute inset-0 z-10" style={{ width: '100%', height: '100%' }}>
+      {/* ReactFlow container - inset for safe areas */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: 'var(--tg-content-safe-area-inset-top, env(safe-area-inset-top, 0px))',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      >
         <ReactFlowProvider>
           <GraphFlow
             nodes={nodes}
@@ -243,6 +275,7 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
             getMinimapNodeColor={getMinimapNodeColor}
+            isMobile={isMobile}
           />
         </ReactFlowProvider>
       </div>

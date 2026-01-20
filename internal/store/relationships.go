@@ -45,9 +45,28 @@ func (v *VaultStore) GetGraph() ([]Item, []Relationship, error) {
 	defer rows.Close()
 
 	var rels []Relationship
+	var tagRels []Relationship
+	linkPairs := make(map[string]struct{})
 	for rows.Next() {
 		var r Relationship
-		rows.Scan(&r.ID, &r.SourceID, &r.TargetID, &r.RelationType, &r.Strength)
+		if err := rows.Scan(&r.ID, &r.SourceID, &r.TargetID, &r.RelationType, &r.Strength); err != nil {
+			return nil, nil, err
+		}
+		switch r.RelationType {
+		case "link":
+			rels = append(rels, r)
+			linkPairs[relationshipPairKey(r.SourceID, r.TargetID)] = struct{}{}
+		case "tag":
+			tagRels = append(tagRels, r)
+		default:
+			continue
+		}
+	}
+
+	for _, r := range tagRels {
+		if _, ok := linkPairs[relationshipPairKey(r.SourceID, r.TargetID)]; ok {
+			continue
+		}
 		rels = append(rels, r)
 	}
 	return items, rels, nil
@@ -56,4 +75,11 @@ func (v *VaultStore) GetGraph() ([]Item, []Relationship, error) {
 func (v *VaultStore) DeleteRelationship(sourceID, targetID string) error {
 	_, err := v.db.Exec(`DELETE FROM relationships WHERE source_id = ? AND target_id = ?`, sourceID, targetID)
 	return err
+}
+
+func relationshipPairKey(sourceID, targetID string) string {
+	if sourceID < targetID {
+		return sourceID + "|" + targetID
+	}
+	return targetID + "|" + sourceID
 }

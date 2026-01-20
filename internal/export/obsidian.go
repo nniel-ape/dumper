@@ -26,6 +26,9 @@ func (e *ObsidianExporter) Export(vault *store.VaultStore) (io.Reader, error) {
 	// Build relationship map for wikilinks
 	relMap := make(map[string][]string)
 	for _, r := range relationships {
+		if r.RelationType != "link" {
+			continue
+		}
 		relMap[r.SourceID] = append(relMap[r.SourceID], r.TargetID)
 	}
 

@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
-	"sort"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -112,28 +111,39 @@ func (p *Pipeline) processLink(ctx context.Context, raw RawContent, existingTags
 }
 
 func (p *Pipeline) processNote(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
+	explicitTitle := extractTitleFromNote(raw.Text)
+	explicitTags := extractHashTags(raw.Text)
+
 	processed, err := p.llmClient.ProcessContent(ctx, "note", raw.Text, raw.Language, existingTags)
 	if err != nil {
 		slog.Warn("LLM processing failed", "error", err)
 		// Fallback: save as-is
-		title := raw.Text
-		if len(title) > 50 {
-			title = title[:50] + "..."
+		title := explicitTitle
+		if title == "" {
+			title = raw.Text
+			if len(title) > 50 {
+				title = title[:50] + "..."
+			}
 		}
 		return &store.Item{
 			Type:    store.ItemTypeNote,
 			Title:   title,
 			Content: raw.Text,
-			Tags:    []string{"uncategorized"},
+			Tags:    mergeTags([]string{"uncategorized"}, explicitTags),
 		}, nil
+	}
+
+	title := processed.Title
+	if explicitTitle != "" {
+		title = explicitTitle
 	}
 
 	return &store.Item{
 		Type:    store.ItemTypeNote,
-		Title:   processed.Title,
+		Title:   title,
 		Summary: processed.Summary,
 		Content: raw.Text,
-		Tags:    processed.Tags,
+		Tags:    mergeTags(processed.Tags, explicitTags),
 	}, nil
 }
 
@@ -158,6 +168,8 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTag
 
 	// If caption exists, process through LLM
 	if raw.Caption != "" {
+		explicitTags := extractHashTags(raw.Caption)
+
 		processed, err := p.llmClient.ProcessContent(ctx, "note with image", raw.Caption, raw.Language, existingTags)
 		if err != nil {
 			slog.Warn("LLM processing failed for image caption", "error", err)
@@ -172,15 +184,12 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTag
 				Title:     title,
 				Content:   raw.Caption,
 				ImagePath: imagePath,
-				Tags:      []string{"image", "uncategorized"},
+				Tags:      mergeTags([]string{"image", "uncategorized"}, explicitTags),
 			}, nil
 		}
 
 		// Ensure "image" tag is always present
-		tags := processed.Tags
-		if !slices.Contains(tags, "image") {
-			tags = append(tags, "image")
-		}
+		tags := mergeTags(processed.Tags, append(explicitTags, "image"))
 
 		return &store.Item{
 			ID:        itemID,
@@ -252,8 +261,8 @@ func (p *Pipeline) processSearch(ctx context.Context, raw RawContent, existingTa
 // findAndCreateRelationships finds related items and creates graph edges.
 // This is best-effort; failures are logged but never fail ingestion.
 func (p *Pipeline) findAndCreateRelationships(ctx context.Context, vault *store.VaultStore, item *store.Item) {
-	// Fetch existing items (limit 200 for reasonable LLM context)
-	allItems, err := vault.ListItems(200, 0)
+	// Fetch recent items (limit 1000 for graph generation)
+	allItems, err := vault.ListItems(1000, 0)
 	if err != nil {
 		slog.Warn("failed to fetch items for relationships", "error", err)
 		return
@@ -264,112 +273,322 @@ func (p *Pipeline) findAndCreateRelationships(ctx context.Context, vault *store.
 		return
 	}
 
-	// Select up to 50 most relevant items (by tag overlap + recency)
-	relevantItems := selectRelevantItems(allItems, item.Tags, item.ID)
-	if len(relevantItems) == 0 {
-		return
+	created := 0
+
+	// Build title index for wikilinks
+	titleIndex := buildTitleIndex(allItems)
+	newTitleKey := normalizeTitle(item.Title)
+
+	linkedIDs := make(map[string]struct{})
+
+	// Create explicit wikilink relationships from the new item to existing items
+	for _, targetKey := range extractWikiLinkTargets(item.Content) {
+		target, ok := titleIndex[targetKey]
+		if !ok || target.ID == item.ID {
+			continue
+		}
+
+		if err := vault.CreateRelationship(&store.Relationship{
+			SourceID:     item.ID,
+			TargetID:     target.ID,
+			RelationType: "link",
+			Strength:     1.0,
+		}); err != nil {
+			slog.Warn("failed to create link relationship",
+				"source", item.ID,
+				"target", target.ID,
+				"error", err)
+			continue
+		}
+		linkedIDs[target.ID] = struct{}{}
+		created++
 	}
 
-	// Format items for LLM
-	itemsContext := formatItemsForLLM(relevantItems)
+	// Create wikilink relationships from existing items to the new item
+	if newTitleKey != "" {
+		for _, other := range allItems {
+			if other.ID == item.ID {
+				continue
+			}
+			if !itemLinksToTitle(other, newTitleKey) {
+				continue
+			}
 
-	// Call LLM to find relationships
-	suggestions, err := p.llmClient.FindRelationships(ctx, item.Title, item.Summary, item.Tags, itemsContext)
-	if err != nil {
-		slog.Warn("LLM relationship finding failed", "error", err)
-		return
+			if err := vault.CreateRelationship(&store.Relationship{
+				SourceID:     other.ID,
+				TargetID:     item.ID,
+				RelationType: "link",
+				Strength:     1.0,
+			}); err != nil {
+				slog.Warn("failed to create back link relationship",
+					"source", other.ID,
+					"target", item.ID,
+					"error", err)
+				continue
+			}
+			linkedIDs[other.ID] = struct{}{}
+			created++
+		}
 	}
 
-	// Create relationships for strength >= 0.5
-	created := createRelationshipsFromSuggestions(vault, item.ID, suggestions)
+	// Create shared tag relationships (skip pairs already connected by explicit links)
+	newTags := filterGraphTags(normalizeTags(item.Tags))
+	if len(newTags) > 0 {
+		newTagSet := make(map[string]struct{}, len(newTags))
+		for _, tag := range newTags {
+			newTagSet[tag] = struct{}{}
+		}
+
+		for _, other := range allItems {
+			if other.ID == item.ID {
+				continue
+			}
+			if _, linked := linkedIDs[other.ID]; linked {
+				continue
+			}
+
+			overlap := countSharedTags(newTagSet, filterGraphTags(normalizeTags(other.Tags)))
+			if overlap == 0 {
+				continue
+			}
+
+			sourceID, targetID := orderedPair(item.ID, other.ID)
+			if err := vault.CreateRelationship(&store.Relationship{
+				SourceID:     sourceID,
+				TargetID:     targetID,
+				RelationType: "tag",
+				Strength:     tagOverlapStrength(overlap),
+			}); err != nil {
+				slog.Warn("failed to create tag relationship",
+					"source", sourceID,
+					"target", targetID,
+					"error", err)
+				continue
+			}
+			created++
+		}
+	}
+
 	if created > 0 {
 		slog.Info("created relationships", "item_id", item.ID, "count", created)
 	}
 }
 
-// formatItemsForLLM formats items for the relationship finding prompt.
-func formatItemsForLLM(items []store.Item) string {
-	var sb strings.Builder
-	for _, item := range items {
-		fmt.Fprintf(&sb, "ID: %s\nTitle: %s\nSummary: %s\nTags: %s\n\n",
-			item.ID, item.Title, item.Summary, strings.Join(item.Tags, ", "))
-	}
-	return sb.String()
-}
+var (
+	wikiLinkPattern = regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
+	hashTagPattern  = regexp.MustCompile(`(?:^|[\s])#([\p{L}\p{N}][\p{L}\p{N}_-]*(?:/[\p{L}\p{N}_-]+)*)`)
+)
 
-// selectRelevantItems filters and sorts items by relevance to the new item.
-// Returns up to 50 items prioritized by tag overlap and recency.
-func selectRelevantItems(allItems []store.Item, newItemTags []string, excludeID string) []store.Item {
-	type scoredItem struct {
-		item     store.Item
-		tagScore int
-	}
-
-	// Build tag set for O(1) lookup
-	tagSet := make(map[string]struct{}, len(newItemTags))
-	for _, tag := range newItemTags {
-		tagSet[strings.ToLower(tag)] = struct{}{}
-	}
-
-	// Score items by tag overlap
-	var scored []scoredItem
-	for _, item := range allItems {
-		if item.ID == excludeID {
+func extractTitleFromNote(text string) string {
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
 			continue
 		}
 
-		tagScore := 0
-		for _, tag := range item.Tags {
-			if _, ok := tagSet[strings.ToLower(tag)]; ok {
-				tagScore++
+		if !strings.HasPrefix(trimmed, "#") {
+			return ""
+		}
+
+		hashCount := 0
+		for hashCount < len(trimmed) && trimmed[hashCount] == '#' {
+			hashCount++
+		}
+		if hashCount == 1 {
+			title := strings.TrimSpace(trimmed[1:])
+			if title != "" {
+				return title
 			}
 		}
-
-		// Only include items with some tag overlap to avoid nonsensical relationships
-		if tagScore > 0 {
-			scored = append(scored, scoredItem{item: item, tagScore: tagScore})
-		}
+		return ""
 	}
-
-	// Sort by tag score (desc), then by recency (already sorted desc from ListItems)
-	sort.SliceStable(scored, func(i, j int) bool {
-		return scored[i].tagScore > scored[j].tagScore
-	})
-
-	// Take top 50
-	limit := min(50, len(scored))
-
-	result := make([]store.Item, limit)
-	for i := range limit {
-		result[i] = scored[i].item
-	}
-	return result
+	return ""
 }
 
-// createRelationshipsFromSuggestions creates graph edges for suggestions with strength >= 0.7.
-func createRelationshipsFromSuggestions(vault *store.VaultStore, sourceID string, suggestions []llm.RelationshipSuggestion) int {
-	created := 0
-	for _, s := range suggestions {
-		if s.Strength < 0.7 {
-			continue
-		}
-
-		rel := &store.Relationship{
-			SourceID:     sourceID,
-			TargetID:     s.TargetID,
-			RelationType: s.RelationType,
-			Strength:     s.Strength,
-		}
-
-		if err := vault.CreateRelationship(rel); err != nil {
-			slog.Warn("failed to create relationship",
-				"source", sourceID,
-				"target", s.TargetID,
-				"type", s.RelationType,
-				"error", err)
-			continue
-		}
-		created++
+func extractWikiLinkTargets(content string) []string {
+	matches := wikiLinkPattern.FindAllStringSubmatch(content, -1)
+	if len(matches) == 0 {
+		return nil
 	}
-	return created
+
+	seen := make(map[string]struct{}, len(matches))
+	var targets []string
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		target := normalizeWikiTarget(match[1])
+		if target == "" {
+			continue
+		}
+		if _, ok := seen[target]; ok {
+			continue
+		}
+		seen[target] = struct{}{}
+		targets = append(targets, target)
+	}
+	return targets
+}
+
+func normalizeWikiTarget(raw string) string {
+	parts := strings.Split(raw, "|")
+	base := parts[0]
+	base = strings.Split(base, "#")[0]
+	base = strings.TrimSpace(base)
+	return normalizeTitle(base)
+}
+
+func extractHashTags(text string) []string {
+	matches := hashTagPattern.FindAllStringSubmatch(text, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(matches))
+	var tags []string
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		tag := normalizeTag(match[1])
+		if tag == "" {
+			continue
+		}
+		if _, ok := seen[tag]; ok {
+			continue
+		}
+		seen[tag] = struct{}{}
+		tags = append(tags, tag)
+	}
+	return tags
+}
+
+func normalizeTitle(title string) string {
+	if title == "" {
+		return ""
+	}
+	title = strings.ToLower(strings.TrimSpace(title))
+	fields := strings.Fields(title)
+	return strings.Join(fields, " ")
+}
+
+func normalizeTag(tag string) string {
+	return strings.ToLower(strings.TrimSpace(tag))
+}
+
+func normalizeTags(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		tag = normalizeTag(tag)
+		if tag == "" {
+			continue
+		}
+		normalized = append(normalized, tag)
+	}
+	return normalized
+}
+
+func mergeTags(primary []string, secondary []string) []string {
+	if len(primary) == 0 && len(secondary) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(primary)+len(secondary))
+	var merged []string
+	for _, tag := range append(primary, secondary...) {
+		tag = normalizeTag(tag)
+		if tag == "" {
+			continue
+		}
+		if _, ok := seen[tag]; ok {
+			continue
+		}
+		seen[tag] = struct{}{}
+		merged = append(merged, tag)
+	}
+	return merged
+}
+
+func filterGraphTags(tags []string) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	ignore := map[string]struct{}{
+		"uncategorized": {},
+		"image":         {},
+		"search":        {},
+		"link":          {},
+		"note":          {},
+	}
+
+	filtered := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		if _, ok := ignore[tag]; ok {
+			continue
+		}
+		filtered = append(filtered, tag)
+	}
+	return filtered
+}
+
+func countSharedTags(left map[string]struct{}, right []string) int {
+	count := 0
+	for _, tag := range right {
+		if _, ok := left[tag]; ok {
+			count++
+		}
+	}
+	return count
+}
+
+func tagOverlapStrength(overlap int) float64 {
+	if overlap <= 0 {
+		return 0
+	}
+	strength := 0.4 + (0.15 * float64(overlap))
+	if strength > 1.0 {
+		return 1.0
+	}
+	return strength
+}
+
+func orderedPair(a, b string) (string, string) {
+	if a < b {
+		return a, b
+	}
+	return b, a
+}
+
+func buildTitleIndex(items []store.Item) map[string]store.Item {
+	index := make(map[string]store.Item, len(items))
+	for _, item := range items {
+		key := normalizeTitle(item.Title)
+		if key == "" {
+			continue
+		}
+		if _, exists := index[key]; exists {
+			continue
+		}
+		index[key] = item
+	}
+	return index
+}
+
+func itemLinksToTitle(item store.Item, titleKey string) bool {
+	if titleKey == "" || item.Content == "" {
+		return false
+	}
+
+	for _, target := range extractWikiLinkTargets(item.Content) {
+		if target == titleKey {
+			return true
+		}
+	}
+	return false
 }

@@ -18,6 +18,7 @@ Respond with ONLY valid JSON (no markdown, no explanation):
 
 Rules:
 - Tags should be lowercase, single words or short phrases
+- If the content includes hashtags (e.g. #tag), include them as tags without the "#"
 - Generate 3-7 relevant tags
 - PREFER reusing existing tags when they fit the content (consistency is valuable)
 - Summary should be informative but concise

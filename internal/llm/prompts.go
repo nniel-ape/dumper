@@ -23,7 +23,7 @@ Rules:
 - Summary should be informative but concise
 - Related topics help build knowledge graph connections`
 
-const FindRelationshipsPrompt = `Given a new item and existing items, identify semantic relationships.
+const FindRelationshipsPrompt = `Given a new item and existing items, identify ONLY genuinely related items.
 
 New item:
 Title: %s
@@ -39,8 +39,27 @@ Respond with ONLY valid JSON array of relationships:
 ]
 
 Relation types: "similar_topic", "references", "contradicts", "extends", "prerequisite"
-Strength: 0.0-1.0 (how strong the connection is)
-Only include relationships with strength >= 0.5`
+Strength: 0.7-1.0 (only strong, obvious connections)
+
+STRICT RULES - read carefully:
+1. Items MUST be in the same knowledge domain (e.g., both about programming, both about cinema, both about cooking)
+2. Do NOT connect items just because they share generic tags like "technology", "article", "image"
+3. Do NOT use "creative interpretation" - the connection must be obvious to any reader
+4. When in doubt, DO NOT create a relationship - return an empty array []
+5. Quality over quantity: 0-2 relationships is normal, more than 3 is suspicious
+
+INVALID relationships (never create these):
+- Film about funeral rites → Programming framework (different domains)
+- Random image → Software tool (no semantic connection)
+- Russian literature → JavaScript library (unrelated)
+- Cooking recipe → Database article (unrelated)
+
+VALID relationships:
+- Go tutorial → Go framework documentation (same language/domain)
+- React hooks article → React state management guide (same framework)
+- Film review → Director's biography (same domain: cinema)
+
+Return empty array [] if no strong relationships exist.`
 
 const AnswerQuestionPrompt = `Based on the following saved knowledge items, answer the user's question.
 

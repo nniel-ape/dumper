@@ -325,7 +325,10 @@ func selectRelevantItems(allItems []store.Item, newItemTags []string, excludeID 
 			}
 		}
 
-		scored = append(scored, scoredItem{item: item, tagScore: tagScore})
+		// Only include items with some tag overlap to avoid nonsensical relationships
+		if tagScore > 0 {
+			scored = append(scored, scoredItem{item: item, tagScore: tagScore})
+		}
 	}
 
 	// Sort by tag score (desc), then by recency (already sorted desc from ListItems)
@@ -343,11 +346,11 @@ func selectRelevantItems(allItems []store.Item, newItemTags []string, excludeID 
 	return result
 }
 
-// createRelationshipsFromSuggestions creates graph edges for suggestions with strength >= 0.5.
+// createRelationshipsFromSuggestions creates graph edges for suggestions with strength >= 0.7.
 func createRelationshipsFromSuggestions(vault *store.VaultStore, sourceID string, suggestions []llm.RelationshipSuggestion) int {
 	created := 0
 	for _, s := range suggestions {
-		if s.Strength < 0.5 {
+		if s.Strength < 0.7 {
 			continue
 		}
 

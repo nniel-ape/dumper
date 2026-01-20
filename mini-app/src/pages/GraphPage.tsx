@@ -17,6 +17,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { useGraph, useIsMobile } from '@/hooks'
+import { getLayoutedElements } from '@/lib/graphLayout'
 import { ItemNode } from '@/components/ItemNode'
 import { GraphSkeleton } from '@/components/LoadingSkeleton'
 import { EmptyState } from '@/components/EmptyState'
@@ -161,39 +162,23 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       )
     })
 
-    // Sort nodes by connection count (hubs first for better layout)
-    const sortedNodes = [...graphNodes].sort((a, b) => {
-      const countA = connectionCounts.get(a.id) || 0
-      const countB = connectionCounts.get(b.id) || 0
-      return countB - countA
-    })
-
-    // Position nodes in a grid with spacing
-    // Add offset to center nodes in viewport (rough estimate)
-    const cols = Math.ceil(Math.sqrt(sortedNodes.length)) || 1
-    const spacingX = 200
-    const spacingY = 140
-    const offsetX = 50
-    const offsetY = 100 // Push down from top to avoid header overlap
-
-    const nodes: Node[] = sortedNodes.map((item, index) => ({
+    // Create nodes with placeholder positions (dagre will reposition)
+    const nodes: Node[] = graphNodes.map((item) => ({
       id: item.id,
       type: 'item',
-      position: {
-        x: offsetX + (index % cols) * spacingX,
-        y: offsetY + Math.floor(index / cols) * spacingY,
-      },
+      position: { x: 0, y: 0 },
       data: {
         item,
         connectionCount: connectionCounts.get(item.id) || 0,
       },
     }))
 
+    // Create edges with bezier curves (no more looping smoothstep paths)
     const edges: Edge[] = graphEdges.map((rel) => ({
       id: `${rel.source_id}-${rel.target_id}`,
       source: rel.source_id,
       target: rel.target_id,
-      type: 'smoothstep',
+      type: 'default',
       label: rel.relation_type,
       animated: rel.strength > 0.7,
       markerEnd: defaultMarker,
@@ -202,11 +187,18 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
         stroke: 'hsl(239 84% 74% / 0.6)',
       },
       pathOptions: {
-        borderRadius: 20,
+        curvature: 0.25,
       },
     }))
 
-    return { initialNodes: nodes, initialEdges: edges }
+    // Apply dagre hierarchical layout
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      nodes,
+      edges,
+      { direction: 'TB', nodeWidth: 160, nodeHeight: 80, rankSep: 100, nodeSep: 50 }
+    )
+
+    return { initialNodes: layoutedNodes, initialEdges: layoutedEdges }
   }, [data])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)

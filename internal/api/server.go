@@ -31,6 +31,7 @@ func (s *Server) routes() {
 	api := http.NewServeMux()
 	api.HandleFunc("GET /items", s.handleListItems)
 	api.HandleFunc("GET /items/{id}", s.handleGetItem)
+	api.HandleFunc("GET /items/{id}/image", s.handleGetItemImage)
 	api.HandleFunc("DELETE /items/{id}", s.handleDeleteItem)
 	api.HandleFunc("GET /search", s.handleSearch)
 	api.HandleFunc("GET /tags", s.handleGetTags)

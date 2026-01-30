@@ -135,6 +135,22 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
 
       {/* Content */}
       <main className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 safe-area-bottom">
+        {/* Image */}
+        {item.image_path && (
+          <section>
+            <img
+              src={`/api/items/${item.id}/image`}
+              alt={item.title || 'Item image'}
+              className="w-full rounded-lg border border-border"
+              onError={(e) => {
+                // Hide image on error - graceful degradation
+                e.currentTarget.style.display = 'none'
+              }}
+              loading="lazy"
+            />
+          </section>
+        )}
+
         {/* Tags */}
         {item.tags && item.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -188,7 +204,7 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
         {/* Open Original Button */}
         {item.url && (
           <Button
-            variant="gradient"
+            variant="default"
             className="w-full"
             onClick={handleOpenLink}
           >

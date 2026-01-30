@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/nerdneilsfield/dumper/internal/export"
 )
@@ -68,6 +71,70 @@ func (s *Server) handleGetItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, item)
+}
+
+func (s *Server) handleGetItemImage(w http.ResponseWriter, r *http.Request) {
+	userID := getUserID(r.Context())
+	itemID := r.PathValue("id")
+
+	vault, err := s.stores.GetVault(userID)
+	if err != nil {
+		http.Error(w, "failed to access vault", http.StatusInternalServerError)
+		return
+	}
+
+	// Get item to verify ownership and get image path
+	item, err := vault.GetItem(itemID)
+	if err != nil {
+		http.Error(w, "failed to get item", http.StatusInternalServerError)
+		return
+	}
+	if item == nil {
+		http.Error(w, "item not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if item has an image
+	if item.ImagePath == "" {
+		http.Error(w, "item has no image", http.StatusNotFound)
+		return
+	}
+
+	// Construct full path to image file
+	userDir := s.stores.UserDir(userID)
+	imagePath := filepath.Join(userDir, item.ImagePath)
+
+	// Security: Ensure path stays within user directory (prevent path traversal)
+	cleanPath := filepath.Clean(imagePath)
+	if !strings.HasPrefix(cleanPath, userDir) {
+		http.Error(w, "invalid image path", http.StatusForbidden)
+		return
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		http.Error(w, "image file not found", http.StatusNotFound)
+		return
+	}
+
+	// Detect content type from extension
+	ext := strings.ToLower(filepath.Ext(item.ImagePath))
+	contentType := "application/octet-stream"
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	case ".gif":
+		contentType = "image/gif"
+	case ".webp":
+		contentType = "image/webp"
+	}
+
+	// Serve the file with caching
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	http.ServeFile(w, r, imagePath)
 }
 
 func (s *Server) handleDeleteItem(w http.ResponseWriter, r *http.Request) {

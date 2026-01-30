@@ -3,9 +3,6 @@ import type { ApiError } from './types'
 
 const BASE_URL = '/api'
 
-// For dev mode without Telegram - set VITE_DEV_USER_ID in .env
-const DEV_USER_ID = import.meta.env.VITE_DEV_USER_ID || null
-
 class ApiClient {
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
@@ -22,12 +19,6 @@ class ApiClient {
 
   private getUrl(path: string): string {
     const url = new URL(BASE_URL + path, window.location.origin)
-
-    // Add dev user_id if no init data
-    if (DEV_USER_ID && !getInitData()) {
-      url.searchParams.set('user_id', DEV_USER_ID)
-    }
-
     return url.toString()
   }
 

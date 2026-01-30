@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -22,15 +21,6 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		initData := r.Header.Get("X-Telegram-Init-Data")
 		if initData == "" {
-			// For development, allow user_id query param
-			if userIDStr := r.URL.Query().Get("user_id"); userIDStr != "" {
-				userID, err := strconv.ParseInt(userIDStr, 10, 64)
-				if err == nil && userID > 0 {
-					ctx := context.WithValue(r.Context(), userIDKey, userID)
-					next.ServeHTTP(w, r.WithContext(ctx))
-					return
-				}
-			}
 			http.Error(w, "missing init data", http.StatusUnauthorized)
 			return
 		}

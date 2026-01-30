@@ -91,8 +91,8 @@ interface SearchResult {
 }
 ```
 
-### Development Auth Shortcut
-The middleware allows `?user_id=123` query param for dev (see `middleware.go:26-33`). Use this for local testing without Telegram.
+### Development Auth
+All API requests require valid `X-Telegram-Init-Data` header with HMAC-SHA256 signature. For local testing, use Telegram Mini App dev tools to inspect and copy the init data header, or create a test utility to generate valid init data using your bot token.
 
 ---
 
@@ -612,9 +612,6 @@ npm run dev
 
    const BASE_URL = '/api'
 
-   // For dev mode without Telegram
-   const DEV_USER_ID = import.meta.env.DEV ? '123456789' : null
-
    class ApiClient {
      private getHeaders(): HeadersInit {
        const headers: HeadersInit = {
@@ -631,12 +628,6 @@ npm run dev
 
      private getUrl(path: string): string {
        const url = new URL(BASE_URL + path, window.location.origin)
-
-       // Add dev user_id if no init data
-       if (DEV_USER_ID && !getInitData()) {
-         url.searchParams.set('user_id', DEV_USER_ID)
-       }
-
        return url.toString()
      }
 

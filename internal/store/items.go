@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -190,9 +191,10 @@ func (v *VaultStore) DeleteItem(id string) error {
 
 	// Clean up image file if it exists
 	if item != nil && item.ImagePath != "" {
-		if err := os.Remove(item.ImagePath); err != nil && !os.IsNotExist(err) {
+		fullPath := filepath.Join(v.userDir, item.ImagePath)
+		if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 			// Log error but don't fail the deletion - database record is already gone
-			slog.Warn("failed to delete image file", "path", item.ImagePath, "error", err)
+			slog.Warn("failed to delete image file", "path", fullPath, "error", err)
 		}
 	}
 
@@ -200,10 +202,38 @@ func (v *VaultStore) DeleteItem(id string) error {
 }
 
 // sanitizeFTS5Query escapes special FTS5 characters to prevent syntax errors
+// while preserving boolean search capability. Splits query into words and
+// joins them with OR for flexible matching.
 func sanitizeFTS5Query(query string) string {
-	// Wrap query in double quotes to treat it as a phrase and escape internal quotes
-	escaped := strings.ReplaceAll(query, `"`, `""`)
-	return `"` + escaped + `"`
+	// Split into words and escape each individually
+	words := strings.Fields(query)
+	if len(words) == 0 {
+		return `""`
+	}
+
+	var escaped []string
+	for _, word := range words {
+		// Remove FTS5 special characters but allow quoted phrases
+		// Escape quotes within the word
+		word = strings.TrimSpace(word)
+		if word == "" {
+			continue
+		}
+
+		// If word contains quotes, treat as phrase
+		if strings.Contains(word, `"`) {
+			word = strings.ReplaceAll(word, `"`, `""`)
+			escaped = append(escaped, `"`+word+`"`)
+		} else {
+			// Escape FTS5 operators and special chars
+			word = strings.ReplaceAll(word, `"`, `""`)
+			escaped = append(escaped, word)
+		}
+	}
+
+	// Join with OR for boolean search (matches any word)
+	// User can use explicit "quoted phrases" for exact matches
+	return strings.Join(escaped, " OR ")
 }
 
 func (v *VaultStore) setItemTags(tx *sql.Tx, itemID string, tags []string) error {

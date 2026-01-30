@@ -65,6 +65,11 @@ func (c *Client) Chat(ctx context.Context, messages []Message) (string, error) {
 		return "", fmt.Errorf("read response: %w", err)
 	}
 
+	// Check HTTP status before unmarshaling
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("openrouter api error: status %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
 	var chatResp ChatResponse
 	if err := json.Unmarshal(respBody, &chatResp); err != nil {
 		return "", fmt.Errorf("unmarshal response: %w", err)

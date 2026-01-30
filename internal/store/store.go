@@ -11,7 +11,8 @@ import (
 )
 
 type VaultStore struct {
-	db *sql.DB
+	db      *sql.DB
+	userDir string
 }
 
 type Manager struct {
@@ -71,7 +72,10 @@ func (m *Manager) openVault(userID int64) (*VaultStore, error) {
 		return nil, fmt.Errorf("run migrations: %w", err)
 	}
 
-	return &VaultStore{db: db}, nil
+	return &VaultStore{
+		db:      db,
+		userDir: userDir,
+	}, nil
 }
 
 func (m *Manager) Close() error {

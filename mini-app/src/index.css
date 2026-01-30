@@ -12,94 +12,82 @@
     --tg-total-safe-area-top: 0px;
     --tg-total-safe-area-bottom: 0px;
 
-    /* Aurora Glass - Light Mode */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Notebook - Light Mode */
+    --background: 40 25% 97%;
+    --foreground: 30 8% 20%;
 
     /* Surfaces */
-    --surface: 0 0% 100% / 0.7;
-    --surface-elevated: 0 0% 100% / 0.9;
-    --glass: 0 0% 100% / 0.6;
-    --glass-border: 0 0% 0% / 0.05;
+    --surface: 35 20% 94%;
+    --surface-elevated: 38 22% 96%;
+    --border-subtle: 35 15% 88%;
 
     /* Text */
-    --text-primary: 222 47% 11%;
-    --text-secondary: 220 13% 36%;
-    --text-muted: 220 9% 64%;
+    --text-primary: 30 8% 20%;
+    --text-secondary: 30 6% 42%;
+    --text-muted: 30 5% 58%;
 
-    /* Accent - Indigo */
-    --accent: 239 84% 67%;
-    --accent-light: 239 84% 74%;
-    --accent-muted: 239 84% 67% / 0.1;
-    --accent-foreground: 0 0% 100%;
-
-    /* Aurora gradient orbs */
-    --aurora-1: 239 84% 67% / 0.12;
-    --aurora-2: 258 90% 66% / 0.08;
-    --aurora-3: 330 81% 60% / 0.06;
+    /* Accent - Muted teal (notebook cover) */
+    --accent: 200 18% 46%;
+    --accent-hover: 25 60% 50%;
+    --accent-muted: 200 18% 46% / 0.08;
+    --accent-foreground: 40 25% 97%;
 
     /* shadcn compatibility */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 13% 36%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 64%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 239 84% 67%;
-    --radius: 0.75rem;
+    --card: 35 20% 94%;
+    --card-foreground: 30 8% 20%;
+    --popover: 38 22% 96%;
+    --popover-foreground: 30 8% 20%;
+    --primary: 200 18% 46%;
+    --primary-foreground: 40 25% 97%;
+    --secondary: 35 18% 90%;
+    --secondary-foreground: 30 8% 20%;
+    --muted: 35 18% 90%;
+    --muted-foreground: 30 6% 42%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 25% 97%;
+    --border: 35 15% 88%;
+    --input: 35 15% 88%;
+    --ring: 200 18% 46%;
+    --radius: 0.5rem;
   }
 
   .dark {
-    /* Aurora Glass - Dark Mode */
-    --background: 224 71% 4%;
-    --foreground: 210 20% 98%;
+    /* Notebook - Dark Mode */
+    --background: 30 12% 12%;
+    --foreground: 40 20% 92%;
 
     /* Surfaces */
-    --surface: 0 0% 100% / 0.03;
-    --surface-elevated: 0 0% 100% / 0.06;
-    --glass: 0 0% 100% / 0.08;
-    --glass-border: 0 0% 100% / 0.1;
+    --surface: 30 10% 16%;
+    --surface-elevated: 30 12% 18%;
+    --border-subtle: 30 8% 24%;
 
     /* Text */
-    --text-primary: 210 20% 98%;
-    --text-secondary: 220 9% 64%;
-    --text-muted: 220 13% 36%;
+    --text-primary: 40 20% 92%;
+    --text-secondary: 30 8% 62%;
+    --text-muted: 30 6% 48%;
 
-    /* Accent - Indigo (brighter in dark mode) */
-    --accent: 239 84% 74%;
-    --accent-light: 239 92% 83%;
-    --accent-muted: 239 84% 74% / 0.15;
-    --accent-foreground: 0 0% 100%;
-
-    /* Aurora gradient orbs */
-    --aurora-1: 239 84% 67% / 0.15;
-    --aurora-2: 258 90% 66% / 0.12;
-    --aurora-3: 330 81% 60% / 0.08;
+    /* Accent - Warmer in dark */
+    --accent: 200 20% 55%;
+    --accent-hover: 25 65% 58%;
+    --accent-muted: 200 20% 55% / 0.12;
+    --accent-foreground: 30 12% 12%;
 
     /* shadcn compatibility */
-    --card: 224 71% 6%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71% 6%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 239 84% 74%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 220 9% 64%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 239 84% 74%;
+    --card: 30 10% 16%;
+    --card-foreground: 40 20% 92%;
+    --popover: 30 12% 18%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 200 20% 55%;
+    --primary-foreground: 30 12% 12%;
+    --secondary: 30 10% 22%;
+    --secondary-foreground: 40 20% 92%;
+    --muted: 30 10% 22%;
+    --muted-foreground: 30 8% 62%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 40 20% 92%;
+    --border: 30 8% 24%;
+    --input: 30 8% 24%;
+    --ring: 200 20% 55%;
   }
 }
 
@@ -161,51 +149,17 @@
     overflow: hidden;
   }
 
-  /* Glass utilities */
-  .glass {
-    @apply backdrop-blur-xl;
-    background: hsl(var(--glass));
-    border: 1px solid hsl(var(--glass-border));
-  }
-
-  .glass-card {
-    @apply backdrop-blur-xl rounded-xl shadow-sm;
+  /* Card utilities - border-based depth */
+  .card-base {
+    @apply rounded-lg;
     background: hsl(var(--surface));
-    border: 1px solid hsl(var(--glass-border));
+    border: 1px solid hsl(var(--border-subtle));
   }
 
-  .glass-elevated {
-    @apply backdrop-blur-xl;
+  .card-elevated {
+    @apply rounded-lg;
     background: hsl(var(--surface-elevated));
-    border: 1px solid hsl(var(--glass-border));
-  }
-
-  /* Aurora background orbs */
-  .aurora-orb-1 {
-    background: hsl(var(--aurora-1));
-  }
-
-  .aurora-orb-2 {
-    background: hsl(var(--aurora-2));
-  }
-
-  .aurora-orb-3 {
-    background: hsl(var(--aurora-3));
-  }
-
-  /* Gradient button glow */
-  .btn-gradient {
-    @apply bg-gradient-to-r from-indigo-500 to-violet-500 text-white;
-    box-shadow: 0 4px 14px 0 hsl(var(--accent) / 0.25);
-  }
-
-  .btn-gradient:hover {
-    box-shadow: 0 6px 20px 0 hsl(var(--accent) / 0.35);
-  }
-
-  /* Performance hint for backdrop-blur */
-  .will-change-blur {
-    will-change: transform, backdrop-filter;
+    border: 1px solid hsl(var(--border));
   }
 }
 
@@ -228,20 +182,19 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* React Flow Controls - Glass styling */
+/* React Flow Controls - Notebook styling */
 .react-flow-controls {
-  @apply backdrop-blur-xl rounded-xl overflow-hidden;
-  background: hsl(var(--surface)) !important;
-  border: 1px solid hsl(var(--glass-border)) !important;
-  box-shadow: 0 4px 20px hsl(var(--accent) / 0.1) !important;
+  @apply rounded-lg overflow-hidden;
+  background: hsl(var(--surface-elevated)) !important;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .react-flow-controls button {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid hsl(var(--glass-border)) !important;
+  border-bottom: 1px solid hsl(var(--border-subtle)) !important;
   color: hsl(var(--foreground)) !important;
-  transition: background 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .react-flow-controls button:last-child {
@@ -256,23 +209,22 @@
   fill: hsl(var(--foreground)) !important;
 }
 
-/* React Flow MiniMap - Glass styling */
+/* React Flow MiniMap - Notebook styling */
 .react-flow-minimap {
-  @apply backdrop-blur-xl overflow-hidden;
-  background: hsl(var(--surface)) !important;
-  border: 1px solid hsl(var(--glass-border)) !important;
-  border-radius: 0.75rem !important;
-  box-shadow: 0 4px 20px hsl(var(--accent) / 0.1) !important;
+  @apply overflow-hidden;
+  background: hsl(var(--surface-elevated)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.5rem !important;
 }
 
 .react-flow-minimap svg {
-  border-radius: 0.75rem !important;
+  border-radius: 0.5rem !important;
 }
 
 /* React Flow Edge hover states */
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: hsl(var(--accent-light)) !important;
-  stroke-width: 3px !important;
+  stroke: hsl(var(--accent-hover)) !important;
+  stroke-width: 2px !important;
 }
 
 /* React Flow node selection */

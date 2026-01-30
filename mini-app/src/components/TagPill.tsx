@@ -18,11 +18,11 @@ export function TagPill({ tag, onClick, className }: TagPillProps) {
         }
       }}
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        'bg-accent-muted text-accent backdrop-blur-sm',
-        'border border-accent/20',
-        'transition-all duration-200',
-        onClick && 'cursor-pointer hover:bg-accent/20 hover:border-accent/30 active:scale-95',
+        'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium',
+        'bg-accent-muted text-accent',
+        'border border-border-subtle',
+        'transition-colors duration-150',
+        onClick && 'cursor-pointer hover:bg-accent/15 hover:border-accent',
         className
       )}
     >

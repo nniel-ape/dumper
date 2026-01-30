@@ -47,21 +47,21 @@ export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
         }
       }}
       className={cn(
-        'mx-4 my-2 p-4 glass-card transition-all duration-200',
-        'hover:shadow-glass active:scale-[0.99]',
+        'mx-4 my-2 p-4 card-base transition-colors duration-150',
+        'hover:border-accent active:bg-surface-elevated',
         onClick && 'cursor-pointer'
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-accent-muted p-2 shrink-0">
+        <div className="rounded bg-accent-muted p-2 shrink-0">
           <Icon className="h-4 w-4 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2 text-foreground">
+          <h3 className="font-semibold text-sm leading-snug mb-1 line-clamp-2 text-foreground">
             {item.title || 'Untitled'}
           </h3>
           {item.summary && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2">
               {item.summary}
             </p>
           )}
@@ -85,7 +85,7 @@ export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
                 +{item.tags.length - 3}
               </span>
             )}
-            <span className="text-xs text-muted-foreground ml-auto font-mono">
+            <span className="text-xs text-text-muted ml-auto font-mono tracking-tight">
               {formatDate(item.created_at)}
             </span>
           </div>

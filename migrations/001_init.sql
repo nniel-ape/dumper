@@ -2,12 +2,13 @@
 
 CREATE TABLE IF NOT EXISTS items (
     id TEXT PRIMARY KEY,
-    type TEXT NOT NULL CHECK(type IN ('link', 'note')),
+    type TEXT NOT NULL CHECK(type IN ('link', 'note', 'image', 'search')),
     url TEXT,
     title TEXT NOT NULL,
     content TEXT,
     summary TEXT,
     raw_content TEXT,
+    image_path TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

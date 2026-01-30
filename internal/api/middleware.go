@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type contextKey string
@@ -74,6 +76,19 @@ func (s *Server) validateInitData(initData string) (int64, error) {
 
 	if hex.EncodeToString(h.Sum(nil)) != hash {
 		return 0, fmt.Errorf("invalid hash")
+	}
+
+	// Validate auth_date to prevent replay attacks (must be within 24 hours)
+	authDateStr := values.Get("auth_date")
+	if authDateStr != "" {
+		authDate, err := strconv.ParseInt(authDateStr, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid auth_date: %w", err)
+		}
+		now := time.Now().Unix()
+		if now-authDate > 86400 { // 24 hours in seconds
+			return 0, fmt.Errorf("init data expired")
+		}
 	}
 
 	// Extract user ID from user JSON

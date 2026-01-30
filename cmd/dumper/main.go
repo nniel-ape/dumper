@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 
@@ -102,7 +103,10 @@ func run() error {
 
 		go func() {
 			<-ctx.Done()
-			if err := server.Shutdown(context.Background()); err != nil {
+			// Use a timeout context for graceful shutdown
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := server.Shutdown(shutdownCtx); err != nil {
 				slog.Error("server shutdown error", "error", err)
 			}
 		}()

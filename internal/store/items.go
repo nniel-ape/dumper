@@ -3,6 +3,8 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -134,6 +136,9 @@ func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, erro
 }
 
 func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
+	// Sanitize FTS5 query to prevent syntax errors with special chars
+	sanitizedQuery := sanitizeFTS5Query(query)
+
 	rows, err := v.db.Query(`
 		SELECT i.id, i.type, i.url, i.title, i.content, i.summary, i.image_path, i.created_at, i.updated_at,
 		       snippet(items_fts, 1, '<mark>', '</mark>', '...', 32) as snippet,
@@ -142,7 +147,7 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 		JOIN items i ON items_fts.rowid = i.rowid
 		WHERE items_fts MATCH ?
 		ORDER BY score
-		LIMIT ?`, query, limit)
+		LIMIT ?`, sanitizedQuery, limit)
 	if err != nil {
 		return nil, fmt.Errorf("search: %w", err)
 	}
@@ -171,8 +176,34 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 }
 
 func (v *VaultStore) DeleteItem(id string) error {
-	_, err := v.db.Exec("DELETE FROM items WHERE id = ?", id)
-	return err
+	// Get item to check for image path before deletion
+	item, err := v.GetItem(id)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("get item: %w", err)
+	}
+
+	// Delete from database (CASCADE handles relationships and tags)
+	_, err = v.db.Exec("DELETE FROM items WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	// Clean up image file if it exists
+	if item != nil && item.ImagePath != "" {
+		if err := os.Remove(item.ImagePath); err != nil && !os.IsNotExist(err) {
+			// Log error but don't fail the deletion - database record is already gone
+			slog.Warn("failed to delete image file", "path", item.ImagePath, "error", err)
+		}
+	}
+
+	return nil
+}
+
+// sanitizeFTS5Query escapes special FTS5 characters to prevent syntax errors
+func sanitizeFTS5Query(query string) string {
+	// Wrap query in double quotes to treat it as a phrase and escape internal quotes
+	escaped := strings.ReplaceAll(query, `"`, `""`)
+	return `"` + escaped + `"`
 }
 
 func (v *VaultStore) setItemTags(tx *sql.Tx, itemID string, tags []string) error {

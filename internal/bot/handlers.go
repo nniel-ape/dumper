@@ -156,9 +156,18 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		}
 	}()
 
-	imageData, err := io.ReadAll(resp.Body)
+	// Limit file size to 20MB (Telegram's max photo size)
+	const maxImageSize = 20 * 1024 * 1024
+	limitedReader := io.LimitReader(resp.Body, maxImageSize+1)
+	imageData, err := io.ReadAll(limitedReader)
 	if err != nil {
 		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedReadImage, err))
+		return
+	}
+
+	// Check if size limit was exceeded
+	if len(imageData) > maxImageSize {
+		b.edit(msg.Chat.ID, sentMsg.MessageID, "Image too large (max 20MB)")
 		return
 	}
 

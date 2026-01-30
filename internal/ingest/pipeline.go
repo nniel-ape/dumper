@@ -157,8 +157,17 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTag
 		return nil, fmt.Errorf("create images dir: %w", err)
 	}
 
+	// Validate image extension (prevent path traversal)
+	validExts := map[string]bool{
+		"jpg": true, "jpeg": true, "png": true, "gif": true, "webp": true,
+	}
+	ext := strings.ToLower(raw.ImageExt)
+	if !validExts[ext] || strings.Contains(ext, ".") || strings.Contains(ext, "/") {
+		return nil, fmt.Errorf("invalid image extension: %s", raw.ImageExt)
+	}
+
 	// Write image file
-	imagePath := fmt.Sprintf("images/%s.%s", itemID, raw.ImageExt)
+	imagePath := fmt.Sprintf("images/%s.%s", itemID, ext)
 	fullPath := filepath.Join(userDir, imagePath)
 	if err := os.WriteFile(fullPath, raw.ImageData, 0644); err != nil {
 		return nil, fmt.Errorf("write image: %w", err)

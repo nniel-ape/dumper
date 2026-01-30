@@ -116,7 +116,12 @@ func (c *Client) ProcessContent(ctx context.Context, contentType, content, lang 
 
 	var result ProcessedContent
 	if err := json.Unmarshal([]byte(response), &result); err != nil {
-		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, response)
+		// Truncate response to prevent logging sensitive data
+		truncated := response
+		if len(truncated) > 200 {
+			truncated = truncated[:200] + "..."
+		}
+		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, truncated)
 	}
 	return &result, nil
 }
@@ -185,7 +190,12 @@ func (c *Client) SummarizeSearchResults(ctx context.Context, topic, searchResult
 
 	var result ProcessedContent
 	if err := json.Unmarshal([]byte(response), &result); err != nil {
-		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, response)
+		// Truncate response to prevent logging sensitive data
+		truncated := response
+		if len(truncated) > 200 {
+			truncated = truncated[:200] + "..."
+		}
+		return nil, fmt.Errorf("parse response: %w (raw: %s)", err, truncated)
 	}
 	return &result, nil
 }

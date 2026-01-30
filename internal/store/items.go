@@ -95,7 +95,11 @@ func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 		item.Content = content.String
 		item.Summary = summary.String
 		item.ImagePath = imagePath.String
-		tags, _ := v.getItemTags(item.ID)
+		tags, err := v.getItemTags(item.ID)
+		if err != nil {
+			slog.Error("failed to load tags for item", "item_id", item.ID, "error", err)
+			tags = []string{} // Continue with empty tags rather than failing the entire query
+		}
 		item.Tags = tags
 		items = append(items, item)
 	}
@@ -129,7 +133,11 @@ func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, erro
 		item.Content = content.String
 		item.Summary = summary.String
 		item.ImagePath = imagePath.String
-		tags, _ := v.getItemTags(item.ID)
+		tags, err := v.getItemTags(item.ID)
+		if err != nil {
+			slog.Error("failed to load tags for item", "item_id", item.ID, "error", err)
+			tags = []string{} // Continue with empty tags rather than failing the entire query
+		}
 		item.Tags = tags
 		items = append(items, item)
 	}

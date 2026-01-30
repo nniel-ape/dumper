@@ -46,7 +46,14 @@ func (b *Bot) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case update := <-updates:
-			go b.handleUpdate(ctx, update)
+			go func(u tgbotapi.Update) {
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("panic in update handler", "panic", r)
+					}
+				}()
+				b.handleUpdate(ctx, u)
+			}(update)
 		}
 	}
 }

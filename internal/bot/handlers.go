@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nerdneilsfield/dumper/internal/i18n"
@@ -143,9 +144,24 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Download file
+	// Download file with timeout context
 	fileURL := file.Link(b.api.Token)
-	resp, err := http.Get(fileURL)
+
+	// Validate URL is from Telegram API (prevent SSRF)
+	if !strings.HasPrefix(fileURL, "https://api.telegram.org/file/") {
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Get(i18n.MsgFailedDownload))
+		slog.Error("invalid telegram file URL", "url", fileURL)
+		return
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fileURL, nil)
+	if err != nil {
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
+		return
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
 		return

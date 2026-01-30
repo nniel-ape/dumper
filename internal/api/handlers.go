@@ -103,11 +103,19 @@ func (s *Server) handleGetItemImage(w http.ResponseWriter, r *http.Request) {
 
 	// Construct full path to image file
 	userDir := s.stores.UserDir(userID)
+
+	// Security: Validate ImagePath doesn't contain path traversal attempts
+	// Check BEFORE joining to prevent bypass via filepath.Clean normalization
+	if strings.Contains(item.ImagePath, "..") || filepath.IsAbs(item.ImagePath) {
+		http.Error(w, "invalid image path", http.StatusForbidden)
+		return
+	}
+
 	imagePath := filepath.Join(userDir, item.ImagePath)
 
-	// Security: Ensure path stays within user directory (prevent path traversal)
+	// Additional safety check: ensure final path stays within user directory
 	cleanPath := filepath.Clean(imagePath)
-	if !strings.HasPrefix(cleanPath, userDir) {
+	if !strings.HasPrefix(cleanPath, filepath.Clean(userDir)+string(filepath.Separator)) {
 		http.Error(w, "invalid image path", http.StatusForbidden)
 		return
 	}

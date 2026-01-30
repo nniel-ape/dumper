@@ -202,10 +202,9 @@ func (v *VaultStore) DeleteItem(id string) error {
 }
 
 // sanitizeFTS5Query escapes special FTS5 characters to prevent syntax errors
-// while preserving boolean search capability. Splits query into words and
-// joins them with OR for flexible matching.
+// while preserving boolean search capability. Splits query into words,
+// wraps each word in quotes to escape special characters, and joins with OR.
 func sanitizeFTS5Query(query string) string {
-	// Split into words and escape each individually
 	words := strings.Fields(query)
 	if len(words) == 0 {
 		return `""`
@@ -213,26 +212,17 @@ func sanitizeFTS5Query(query string) string {
 
 	var escaped []string
 	for _, word := range words {
-		// Remove FTS5 special characters but allow quoted phrases
-		// Escape quotes within the word
 		word = strings.TrimSpace(word)
 		if word == "" {
 			continue
 		}
-
-		// If word contains quotes, treat as phrase
-		if strings.Contains(word, `"`) {
-			word = strings.ReplaceAll(word, `"`, `""`)
-			escaped = append(escaped, `"`+word+`"`)
-		} else {
-			// Escape FTS5 operators and special chars
-			word = strings.ReplaceAll(word, `"`, `""`)
-			escaped = append(escaped, word)
-		}
+		// Escape internal quotes and wrap each word in quotes to prevent
+		// special characters like +, -, *, :, etc. from being interpreted as operators
+		word = strings.ReplaceAll(word, `"`, `""`)
+		escaped = append(escaped, `"`+word+`"`)
 	}
 
 	// Join with OR for boolean search (matches any word)
-	// User can use explicit "quoted phrases" for exact matches
 	return strings.Join(escaped, " OR ")
 }
 

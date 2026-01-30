@@ -86,8 +86,9 @@ func (s *Server) validateInitData(initData string) (int64, error) {
 			return 0, fmt.Errorf("invalid auth_date: %w", err)
 		}
 		now := time.Now().Unix()
-		if now-authDate > 86400 { // 24 hours in seconds
-			return 0, fmt.Errorf("init data expired")
+		age := now - authDate
+		if age < 0 || age > 86400 { // Reject future timestamps and data older than 24 hours
+			return 0, fmt.Errorf("init data expired or from future")
 		}
 	}
 

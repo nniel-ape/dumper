@@ -67,6 +67,10 @@ func (v *VaultStore) GetGraph() ([]Item, []Relationship, error) {
 		}
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
 	for _, r := range tagRels {
 		if _, ok := linkPairs[relationshipPairKey(r.SourceID, r.TargetID)]; ok {
 			continue

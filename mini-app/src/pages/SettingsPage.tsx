@@ -103,7 +103,7 @@ export function SettingsPage() {
           <p className="text-sm text-muted-foreground mb-3">
             Download your vault as Obsidian-compatible markdown files.
           </p>
-          <Button variant="gradient" onClick={handleExport} className="w-full">
+          <Button variant="default" onClick={handleExport} className="w-full">
             <Download className="h-4 w-4 mr-2" />
             Export to Obsidian
           </Button>

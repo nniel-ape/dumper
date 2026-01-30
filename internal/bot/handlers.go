@@ -347,7 +347,11 @@ func (b *Bot) handleStats(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
-	tags, _ := vault.GetAllTags()
+	tags, err := vault.GetAllTags()
+	if err != nil {
+		b.send(msg.Chat.ID, l.Getf(i18n.MsgFailedGetStats, err))
+		return
+	}
 
 	b.send(msg.Chat.ID, l.Getf(i18n.MsgYourVault, count, len(tags)))
 }

@@ -80,16 +80,18 @@ func (s *Server) validateInitData(initData string) (int64, error) {
 
 	// Validate auth_date to prevent replay attacks (must be within 24 hours)
 	authDateStr := values.Get("auth_date")
-	if authDateStr != "" {
-		authDate, err := strconv.ParseInt(authDateStr, 10, 64)
-		if err != nil {
-			return 0, fmt.Errorf("invalid auth_date: %w", err)
-		}
-		now := time.Now().Unix()
-		age := now - authDate
-		if age < 0 || age > 86400 { // Reject future timestamps and data older than 24 hours
-			return 0, fmt.Errorf("init data expired or from future")
-		}
+	if authDateStr == "" {
+		return 0, fmt.Errorf("missing auth_date")
+	}
+
+	authDate, err := strconv.ParseInt(authDateStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid auth_date: %w", err)
+	}
+	now := time.Now().Unix()
+	age := now - authDate
+	if age < 0 || age > 86400 { // Reject future timestamps and data older than 24 hours
+		return 0, fmt.Errorf("init data expired or from future")
 	}
 
 	// Extract user ID from user JSON

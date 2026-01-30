@@ -103,6 +103,11 @@ func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 		item.Tags = tags
 		items = append(items, item)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate items: %w", err)
+	}
+
 	return items, nil
 }
 
@@ -141,6 +146,11 @@ func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, erro
 		item.Tags = tags
 		items = append(items, item)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate items: %w", err)
+	}
+
 	return items, nil
 }
 
@@ -177,10 +187,19 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 		r.Item.Content = content.String
 		r.Item.Summary = summary.String
 		r.Item.ImagePath = imagePath.String
-		tags, _ := v.getItemTags(r.Item.ID)
+		tags, err := v.getItemTags(r.Item.ID)
+		if err != nil {
+			slog.Error("failed to load tags for item", "item_id", r.Item.ID, "error", err)
+			tags = []string{} // Continue with empty tags rather than failing the entire query
+		}
 		r.Item.Tags = tags
 		results = append(results, r)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate results: %w", err)
+	}
+
 	return results, nil
 }
 
@@ -230,8 +249,8 @@ func sanitizeFTS5Query(query string) string {
 		escaped = append(escaped, `"`+word+`"`)
 	}
 
-	// Join with OR for boolean search (matches any word)
-	return strings.Join(escaped, " OR ")
+	// Join with implicit AND (matches all words)
+	return strings.Join(escaped, " ")
 }
 
 func (v *VaultStore) setItemTags(tx *sql.Tx, itemID string, tags []string) error {

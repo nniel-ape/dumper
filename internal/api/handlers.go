@@ -106,7 +106,7 @@ func (s *Server) handleGetItemImage(w http.ResponseWriter, r *http.Request) {
 
 	// Security: Validate ImagePath doesn't contain path traversal attempts
 	// Check BEFORE joining to prevent bypass via filepath.Clean normalization
-	if strings.Contains(item.ImagePath, "..") || filepath.IsAbs(item.ImagePath) {
+	if item.ImagePath == "" || strings.Contains(item.ImagePath, "..") || filepath.IsAbs(item.ImagePath) {
 		http.Error(w, "invalid image path", http.StatusForbidden)
 		return
 	}
@@ -115,7 +115,8 @@ func (s *Server) handleGetItemImage(w http.ResponseWriter, r *http.Request) {
 
 	// Additional safety check: ensure final path stays within user directory
 	cleanPath := filepath.Clean(imagePath)
-	if !strings.HasPrefix(cleanPath, filepath.Clean(userDir)+string(filepath.Separator)) {
+	cleanUserDir := filepath.Clean(userDir)
+	if cleanPath == cleanUserDir || !strings.HasPrefix(cleanPath, cleanUserDir+string(filepath.Separator)) {
 		http.Error(w, "invalid image path", http.StatusForbidden)
 		return
 	}
@@ -313,8 +314,17 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, _ := vault.ItemCount()
-	tags, _ := vault.GetAllTags()
+	count, err := vault.ItemCount()
+	if err != nil {
+		jsonError(w, "failed to get item count", http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := vault.GetAllTags()
+	if err != nil {
+		jsonError(w, "failed to get tags", http.StatusInternalServerError)
+		return
+	}
 
 	jsonResponse(w, map[string]interface{}{
 		"items": count,

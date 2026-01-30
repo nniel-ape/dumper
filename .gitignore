@@ -6,3 +6,6 @@ mini-app/dist/
 node_modules/
 *.exe
 .DS_Store
+
+# ralphex progress logs
+progress*.txt

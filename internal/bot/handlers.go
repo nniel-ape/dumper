@@ -150,7 +150,11 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("failed to close response body", "error", err)
+		}
+	}()
 
 	imageData, err := io.ReadAll(resp.Body)
 	if err != nil {

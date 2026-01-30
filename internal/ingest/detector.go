@@ -42,16 +42,10 @@ func IsShortTopicMessage(text string) bool {
 	}
 
 	// Must contain at least one letter
-	hasLetter := false
 	for _, r := range text {
 		if unicode.IsLetter(r) {
-			hasLetter = true
-			break
+			return true
 		}
 	}
-	if !hasLetter {
-		return false
-	}
-
-	return true
+	return false
 }

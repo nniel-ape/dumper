@@ -57,7 +57,11 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("create store manager: %w", err)
 	}
-	defer stores.Close()
+	defer func() {
+		if err := stores.Close(); err != nil {
+			slog.Error("failed to close stores", "error", err)
+		}
+	}()
 
 	// Initialize LLM client
 	llmClient := llm.NewClient(cfg.OpenRouterKey, cfg.OpenRouterModel)
@@ -98,7 +102,9 @@ func run() error {
 
 		go func() {
 			<-ctx.Done()
-			server.Shutdown(context.Background())
+			if err := server.Shutdown(context.Background()); err != nil {
+				slog.Error("server shutdown error", "error", err)
+			}
 		}()
 
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {

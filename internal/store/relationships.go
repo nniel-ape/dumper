@@ -18,7 +18,9 @@ func (v *VaultStore) GetRelationships(itemID string) ([]Relationship, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query relationships: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var rels []Relationship
 	for rows.Next() {
@@ -42,7 +44,9 @@ func (v *VaultStore) GetGraph() ([]Item, []Relationship, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var rels []Relationship
 	var tagRels []Relationship

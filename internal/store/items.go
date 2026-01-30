@@ -20,7 +20,9 @@ func (v *VaultStore) CreateItem(item *Item) error {
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() // Rollback is always safe to call; ignore error as commit handles success
+	}()
 
 	_, err = tx.Exec(`
 		INSERT INTO items (id, type, url, title, content, summary, raw_content, image_path, created_at, updated_at)
@@ -74,7 +76,9 @@ func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query items: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var items []Item
 	for rows.Next() {
@@ -106,7 +110,9 @@ func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, erro
 	if err != nil {
 		return nil, fmt.Errorf("query items by tag: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var items []Item
 	for rows.Next() {
@@ -140,7 +146,9 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("search: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var results []SearchResult
 	for rows.Next() {
@@ -200,12 +208,16 @@ func (v *VaultStore) getItemTags(itemID string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var tags []string
 	for rows.Next() {
 		var tag string
-		rows.Scan(&tag)
+		if err := rows.Scan(&tag); err != nil {
+			return nil, fmt.Errorf("scan tag: %w", err)
+		}
 		tags = append(tags, tag)
 	}
 	return tags, nil
@@ -216,12 +228,16 @@ func (v *VaultStore) GetAllTags() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Close is always safe to call
+	}()
 
 	var tags []string
 	for rows.Next() {
 		var tag string
-		rows.Scan(&tag)
+		if err := rows.Scan(&tag); err != nil {
+			return nil, fmt.Errorf("scan tag: %w", err)
+		}
 		tags = append(tags, tag)
 	}
 	return tags, nil

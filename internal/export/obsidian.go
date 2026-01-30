@@ -49,7 +49,9 @@ func (e *ObsidianExporter) Export(vault *store.VaultStore) (io.Reader, error) {
 		if err != nil {
 			return nil, err
 		}
-		f.Write([]byte(content))
+		if _, err := f.Write([]byte(content)); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := zw.Close(); err != nil {

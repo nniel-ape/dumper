@@ -67,7 +67,7 @@ func (m *Manager) openVault(userID int64) (*VaultStore, error) {
 	}
 
 	if err := RunMigrations(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("run migrations: %w", err)
 	}
 
@@ -77,10 +77,13 @@ func (m *Manager) openVault(userID int64) (*VaultStore, error) {
 func (m *Manager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	var firstErr error
 	for _, v := range m.vaults {
-		v.db.Close()
+		if err := v.db.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
 	}
-	return nil
+	return firstErr
 }
 
 // DB returns the underlying database connection (for advanced use)

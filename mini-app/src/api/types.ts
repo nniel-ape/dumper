@@ -8,6 +8,7 @@ export interface Item {
   content?: string
   summary?: string
   image_path?: string
+  image_paths?: string[]
   tags: string[]
   created_at: string
   updated_at: string

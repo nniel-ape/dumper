@@ -34,6 +34,7 @@ Just send me any URL or text message!`,
 	MsgProcessingLink:   "⏳ Processing link...",
 	MsgProcessingNote:   "⏳ Processing note...",
 	MsgSavingImage:      "📷 Saving image...",
+	MsgSavingImages:     "📷 Saving %d images...",
 	MsgSearching:        "🔍 Searching: <b>%s</b>...",
 	MsgSearchUsage:      "Usage: /search [query]\nExample: /search golang concurrency",
 	MsgRecentItems:      "📚 <b>Recent items:</b>\n\n",
@@ -47,7 +48,8 @@ Just send me any URL or text message!`,
 
 	// Success messages
 	MsgSaved:      "✅ <b>Saved!</b>",
-	MsgImageSaved: "✅ <b>Image saved!</b>",
+	MsgImageSaved:  "✅ <b>Image saved!</b>",
+	MsgImagesSaved: "✅ <b>%d images saved!</b>",
 
 	// Empty states
 	MsgNoResults: "No results found.",

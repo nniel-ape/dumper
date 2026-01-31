@@ -147,6 +147,84 @@ func (s *Server) handleGetItemImage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, imagePath)
 }
 
+func (s *Server) handleGetItemImageByIndex(w http.ResponseWriter, r *http.Request) {
+	userID := getUserID(r.Context())
+	itemID := r.PathValue("id")
+	indexStr := r.PathValue("index")
+
+	index, err := strconv.Atoi(indexStr)
+	if err != nil || index < 0 {
+		http.Error(w, "invalid image index", http.StatusBadRequest)
+		return
+	}
+
+	vault, err := s.stores.GetVault(userID)
+	if err != nil {
+		http.Error(w, "failed to access vault", http.StatusInternalServerError)
+		return
+	}
+
+	item, err := vault.GetItem(itemID)
+	if err != nil {
+		http.Error(w, "failed to get item", http.StatusInternalServerError)
+		return
+	}
+	if item == nil {
+		http.Error(w, "item not found", http.StatusNotFound)
+		return
+	}
+
+	if len(item.ImagePaths) == 0 {
+		http.Error(w, "item has no images", http.StatusNotFound)
+		return
+	}
+
+	if index >= len(item.ImagePaths) {
+		http.Error(w, "image index out of range", http.StatusNotFound)
+		return
+	}
+
+	imagePath := item.ImagePaths[index]
+	userDir := s.stores.UserDir(userID)
+
+	// Security: validate path doesn't contain traversal attempts
+	if imagePath == "" || strings.Contains(imagePath, "..") || filepath.IsAbs(imagePath) {
+		http.Error(w, "invalid image path", http.StatusForbidden)
+		return
+	}
+
+	fullPath := filepath.Join(userDir, imagePath)
+
+	cleanPath := filepath.Clean(fullPath)
+	cleanUserDir := filepath.Clean(userDir)
+	if cleanPath == cleanUserDir || !strings.HasPrefix(cleanPath, cleanUserDir+string(filepath.Separator)) {
+		http.Error(w, "invalid image path", http.StatusForbidden)
+		return
+	}
+
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		http.Error(w, "image file not found", http.StatusNotFound)
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(imagePath))
+	contentType := "application/octet-stream"
+	switch ext {
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".png":
+		contentType = "image/png"
+	case ".gif":
+		contentType = "image/gif"
+	case ".webp":
+		contentType = "image/webp"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	http.ServeFile(w, r, fullPath)
+}
+
 func (s *Server) handleDeleteItem(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r.Context())
 	itemID := r.PathValue("id")

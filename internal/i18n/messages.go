@@ -14,6 +14,7 @@ const (
 	MsgProcessingLink  MsgKey = "processing_link"
 	MsgProcessingNote  MsgKey = "processing_note"
 	MsgSavingImage     MsgKey = "saving_image"
+	MsgSavingImages    MsgKey = "saving_images"
 	MsgSearching       MsgKey = "searching"
 	MsgSearchUsage     MsgKey = "search_usage"
 	MsgRecentItems     MsgKey = "recent_items"
@@ -26,8 +27,9 @@ const (
 	MsgExportComingSoon MsgKey = "export_coming_soon"
 
 	// Success messages
-	MsgSaved      MsgKey = "saved"
-	MsgImageSaved MsgKey = "image_saved"
+	MsgSaved       MsgKey = "saved"
+	MsgImageSaved  MsgKey = "image_saved"
+	MsgImagesSaved MsgKey = "images_saved"
 
 	// Empty states
 	MsgNoResults  MsgKey = "no_results"

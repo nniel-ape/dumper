@@ -150,6 +150,16 @@ func (p *Pipeline) processNote(ctx context.Context, raw RawContent, existingTags
 func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTags []string) (*store.Item, error) {
 	itemID := uuid.NewString()
 
+	// Normalize: if Images is empty but legacy ImageData is set, wrap it
+	images := raw.Images
+	if len(images) == 0 && len(raw.ImageData) > 0 {
+		images = []ImageFile{{Data: raw.ImageData, Ext: raw.ImageExt}}
+	}
+
+	if len(images) == 0 {
+		return nil, fmt.Errorf("no image data provided")
+	}
+
 	// Create images directory under user folder
 	userDir := p.stores.UserDir(raw.UserID)
 	imagesDir := filepath.Join(userDir, "images")
@@ -157,23 +167,39 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTag
 		return nil, fmt.Errorf("create images dir: %w", err)
 	}
 
-	// Validate image extension (prevent path traversal)
 	validExts := map[string]bool{
 		"jpg": true, "jpeg": true, "png": true, "gif": true, "webp": true,
 	}
-	ext := strings.ToLower(raw.ImageExt)
-	if !validExts[ext] || strings.Contains(ext, ".") || strings.Contains(ext, "/") {
-		return nil, fmt.Errorf("invalid image extension: %s", raw.ImageExt)
+
+	var imagePaths []string
+	for i, img := range images {
+		ext := strings.ToLower(img.Ext)
+		if !validExts[ext] || strings.Contains(ext, ".") || strings.Contains(ext, "/") {
+			slog.Warn("skipping image with invalid extension", "ext", img.Ext, "index", i)
+			continue
+		}
+
+		var imagePath string
+		if len(images) == 1 {
+			imagePath = fmt.Sprintf("images/%s.%s", itemID, ext)
+		} else {
+			imagePath = fmt.Sprintf("images/%s_%d.%s", itemID, i, ext)
+		}
+
+		fullPath := filepath.Join(userDir, imagePath)
+		if err := os.WriteFile(fullPath, img.Data, 0644); err != nil {
+			slog.Warn("failed to write image", "index", i, "error", err)
+			continue
+		}
+		imagePaths = append(imagePaths, imagePath)
+		slog.Info("saved image", "id", itemID, "path", imagePath, "size", len(img.Data))
 	}
 
-	// Write image file
-	imagePath := fmt.Sprintf("images/%s.%s", itemID, ext)
-	fullPath := filepath.Join(userDir, imagePath)
-	if err := os.WriteFile(fullPath, raw.ImageData, 0644); err != nil {
-		return nil, fmt.Errorf("write image: %w", err)
+	if len(imagePaths) == 0 {
+		return nil, fmt.Errorf("all images failed to save")
 	}
 
-	slog.Info("saved image", "id", itemID, "path", imagePath, "size", len(raw.ImageData))
+	firstPath := imagePaths[0]
 
 	// If caption exists, process through LLM
 	if raw.Caption != "" {
@@ -182,42 +208,47 @@ func (p *Pipeline) processImage(ctx context.Context, raw RawContent, existingTag
 		processed, err := p.llmClient.ProcessContent(ctx, "note with image", raw.Caption, raw.Language, existingTags)
 		if err != nil {
 			slog.Warn("LLM processing failed for image caption", "error", err)
-			// Fallback: use caption as-is
 			title := raw.Caption
 			if len(title) > 100 {
 				title = title[:100] + "..."
 			}
 			return &store.Item{
-				ID:        itemID,
-				Type:      store.ItemTypeImage,
-				Title:     title,
-				Content:   raw.Caption,
-				ImagePath: imagePath,
-				Tags:      mergeTags([]string{"image", "uncategorized"}, explicitTags),
+				ID:         itemID,
+				Type:       store.ItemTypeImage,
+				Title:      title,
+				Content:    raw.Caption,
+				ImagePath:  firstPath,
+				ImagePaths: imagePaths,
+				Tags:       mergeTags([]string{"image", "uncategorized"}, explicitTags),
 			}, nil
 		}
 
-		// Ensure "image" tag is always present
 		tags := mergeTags(processed.Tags, append(explicitTags, "image"))
 
 		return &store.Item{
-			ID:        itemID,
-			Type:      store.ItemTypeImage,
-			Title:     processed.Title,
-			Summary:   processed.Summary,
-			Content:   raw.Caption,
-			ImagePath: imagePath,
-			Tags:      tags,
+			ID:         itemID,
+			Type:       store.ItemTypeImage,
+			Title:      processed.Title,
+			Summary:    processed.Summary,
+			Content:    raw.Caption,
+			ImagePath:  firstPath,
+			ImagePaths: imagePaths,
+			Tags:       tags,
 		}, nil
 	}
 
-	// No caption: save image with minimal metadata
+	// No caption: save image(s) with minimal metadata
+	title := "Image"
+	if len(imagePaths) > 1 {
+		title = fmt.Sprintf("%d Images", len(imagePaths))
+	}
 	return &store.Item{
-		ID:        itemID,
-		Type:      store.ItemTypeImage,
-		Title:     "Image",
-		ImagePath: imagePath,
-		Tags:      []string{"image"},
+		ID:         itemID,
+		Type:       store.ItemTypeImage,
+		Title:      title,
+		ImagePath:  firstPath,
+		ImagePaths: imagePaths,
+		Tags:       []string{"image"},
 	}, nil
 }
 

@@ -19,7 +19,8 @@ type Item struct {
 	Content    string    `json:"content,omitempty"`
 	Summary    string    `json:"summary,omitempty"`
 	RawContent string    `json:"-"`
-	ImagePath  string    `json:"image_path,omitempty"` // relative path from user dir
+	ImagePath  string    `json:"image_path,omitempty"`  // relative path from user dir (first image, backward compat)
+	ImagePaths []string  `json:"image_paths,omitempty"` // all image paths (media groups)
 	Tags       []string  `json:"tags"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -127,44 +128,32 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	}
 }
 
-func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
-	l := b.getUserLang(msg.From.ID, msg.From.LanguageCode)
-
-	// Get largest photo (last in slice)
+// downloadPhoto downloads the largest resolution of a photo from a Telegram message.
+func (b *Bot) downloadPhoto(ctx context.Context, msg *tgbotapi.Message) ([]byte, string, error) {
 	photos := msg.Photo
 	photo := photos[len(photos)-1]
 
-	sentMsg, _ := b.sendAndReturn(msg.Chat.ID, l.Get(i18n.MsgSavingImage))
-
-	// Get file info from Telegram
 	fileConfig := tgbotapi.FileConfig{FileID: photo.FileID}
 	file, err := b.api.GetFile(fileConfig)
 	if err != nil {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedFileInfo, err))
-		return
+		return nil, "", fmt.Errorf("get file info: %w", err)
 	}
 
-	// Download file with timeout context
 	fileURL := file.Link(b.api.Token)
 
-	// Validate URL is from Telegram API (prevent SSRF)
 	if !strings.HasPrefix(fileURL, "https://api.telegram.org/file/") {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Get(i18n.MsgFailedDownload))
-		slog.Error("invalid telegram file URL", "url", fileURL)
-		return
+		return nil, "", fmt.Errorf("invalid telegram file URL")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", fileURL, nil)
 	if err != nil {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
-		return
+		return nil, "", fmt.Errorf("create request: %w", err)
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
-		return
+		return nil, "", fmt.Errorf("download: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -172,27 +161,36 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		}
 	}()
 
-	// Limit file size to 20MB (Telegram's max photo size)
 	const maxImageSize = 20 * 1024 * 1024
 	limitedReader := io.LimitReader(resp.Body, maxImageSize+1)
 	imageData, err := io.ReadAll(limitedReader)
 	if err != nil {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedReadImage, err))
-		return
+		return nil, "", fmt.Errorf("read image: %w", err)
 	}
 
-	// Check if size limit was exceeded
 	if len(imageData) > maxImageSize {
-		b.edit(msg.Chat.ID, sentMsg.MessageID, "Image too large (max 20MB)")
-		return
+		return nil, "", fmt.Errorf("image too large (max 20MB)")
 	}
 
-	// Determine file extension
-	ext := "jpg" // default
+	ext := "jpg"
 	if filePath := file.FilePath; filePath != "" {
 		if e := path.Ext(filePath); e != "" {
 			ext = strings.TrimPrefix(e, ".")
 		}
+	}
+
+	return imageData, ext, nil
+}
+
+func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
+	l := b.getUserLang(msg.From.ID, msg.From.LanguageCode)
+
+	sentMsg, _ := b.sendAndReturn(msg.Chat.ID, l.Get(i18n.MsgSavingImage))
+
+	imageData, ext, err := b.downloadPhoto(ctx, msg)
+	if err != nil {
+		b.edit(msg.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, err))
+		return
 	}
 
 	raw := ingest.RawContent{
@@ -210,7 +208,6 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Format response
 	var tagsStr string
 	if len(item.Tags) > 0 {
 		tagsStr = "#" + strings.Join(item.Tags, " #")
@@ -231,6 +228,96 @@ func (b *Bot) handlePhoto(ctx context.Context, msg *tgbotapi.Message) {
 		b.editWithKeyboard(msg.Chat.ID, sentMsg.MessageID, response, keyboard)
 	} else {
 		b.edit(msg.Chat.ID, sentMsg.MessageID, response)
+	}
+}
+
+// handleMediaGroup processes a batch of messages that form a Telegram media group.
+func (b *Bot) handleMediaGroup(ctx context.Context, messages []*tgbotapi.Message) {
+	first := messages[0]
+	l := b.getUserLang(first.From.ID, first.From.LanguageCode)
+
+	sentMsg, _ := b.sendAndReturn(first.Chat.ID, l.Getf(i18n.MsgSavingImages, len(messages)))
+
+	// Find caption from any message in the group (usually the first)
+	var caption string
+	for _, msg := range messages {
+		if msg.Caption != "" {
+			caption = msg.Caption
+			break
+		}
+	}
+
+	// Download all photos in parallel
+	type downloadResult struct {
+		index int
+		data  []byte
+		ext   string
+		err   error
+	}
+
+	results := make([]downloadResult, len(messages))
+	var wg sync.WaitGroup
+	for i, msg := range messages {
+		wg.Add(1)
+		go func(idx int, m *tgbotapi.Message) {
+			defer wg.Done()
+			data, ext, err := b.downloadPhoto(ctx, m)
+			results[idx] = downloadResult{index: idx, data: data, ext: ext, err: err}
+		}(i, msg)
+	}
+	wg.Wait()
+
+	// Collect successful downloads (preserve order)
+	var images []ingest.ImageFile
+	for _, r := range results {
+		if r.err != nil {
+			slog.Warn("failed to download media group photo",
+				"index", r.index, "error", r.err)
+			continue
+		}
+		images = append(images, ingest.ImageFile{Data: r.data, Ext: r.ext})
+	}
+
+	if len(images) == 0 {
+		b.edit(first.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedDownload, fmt.Errorf("all downloads failed")))
+		return
+	}
+
+	raw := ingest.RawContent{
+		Type:     ingest.ContentTypeImage,
+		UserID:   first.From.ID,
+		Images:   images,
+		Caption:  caption,
+		Language: l.Code(),
+	}
+
+	item, err := b.pipeline.Process(ctx, raw)
+	if err != nil {
+		b.edit(first.Chat.ID, sentMsg.MessageID, l.Getf(i18n.MsgFailedSaveImage, err))
+		return
+	}
+
+	var tagsStr string
+	if len(item.Tags) > 0 {
+		tagsStr = "#" + strings.Join(item.Tags, " #")
+	}
+
+	savedMsg := l.Getf(i18n.MsgImagesSaved, len(images))
+	response := fmt.Sprintf(`%s
+
+<b>%s</b>
+
+%s`, savedMsg, item.Title, tagsStr)
+
+	if b.webAppURL != "" {
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL(l.Get(i18n.MsgViewInApp), b.webAppURL+"?item="+item.ID),
+			),
+		)
+		b.editWithKeyboard(first.Chat.ID, sentMsg.MessageID, response, keyboard)
+	} else {
+		b.edit(first.Chat.ID, sentMsg.MessageID, response)
 	}
 }
 

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"sync"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nerdneilsfield/dumper/internal/i18n"
@@ -12,11 +14,21 @@ import (
 	"github.com/nerdneilsfield/dumper/internal/store"
 )
 
+// mediaGroupEntry buffers messages from a Telegram media group until the group is complete.
+type mediaGroupEntry struct {
+	messages []*tgbotapi.Message
+	timer    *time.Timer
+	mu       sync.Mutex
+}
+
 type Bot struct {
 	api       *tgbotapi.BotAPI
 	pipeline  *ingest.Pipeline
 	stores    *store.Manager
 	webAppURL string
+
+	mediaGroups   map[string]*mediaGroupEntry
+	mediaGroupsMu sync.Mutex
 }
 
 func New(token string, pipeline *ingest.Pipeline, stores *store.Manager, webAppURL string) (*Bot, error) {
@@ -28,10 +40,11 @@ func New(token string, pipeline *ingest.Pipeline, stores *store.Manager, webAppU
 	slog.Info("authorized telegram bot", "username", api.Self.UserName)
 
 	return &Bot{
-		api:       api,
-		pipeline:  pipeline,
-		stores:    stores,
-		webAppURL: webAppURL,
+		api:         api,
+		pipeline:    pipeline,
+		stores:      stores,
+		webAppURL:   webAppURL,
+		mediaGroups: make(map[string]*mediaGroupEntry),
 	}, nil
 }
 
@@ -70,6 +83,7 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		"user_id", userID,
 		"text", msg.Text,
 		"has_entities", len(msg.Entities) > 0,
+		"media_group_id", msg.MediaGroupID,
 	)
 
 	// Handle commands
@@ -78,8 +92,95 @@ func (b *Bot) handleUpdate(ctx context.Context, update tgbotapi.Update) {
 		return
 	}
 
+	// Intercept media group photos
+	if msg.MediaGroupID != "" && len(msg.Photo) > 0 {
+		b.bufferMediaGroup(ctx, msg)
+		return
+	}
+
 	// Handle regular messages
 	b.handleMessage(ctx, msg)
+}
+
+const (
+	// mediaGroupFlushDelay is the time to wait for more messages in a media group
+	// before flushing. Telegram sends group messages within ~100-300ms of each other.
+	mediaGroupFlushDelay = 500 * time.Millisecond
+	// maxMediaGroupSize is the maximum number of photos Telegram allows in a media group.
+	maxMediaGroupSize = 10
+)
+
+// bufferMediaGroup accumulates messages belonging to the same media group,
+// then flushes them as a single batch after a short delay.
+func (b *Bot) bufferMediaGroup(ctx context.Context, msg *tgbotapi.Message) {
+	groupID := msg.MediaGroupID
+
+	b.mediaGroupsMu.Lock()
+	entry, exists := b.mediaGroups[groupID]
+	if !exists {
+		entry = &mediaGroupEntry{}
+		b.mediaGroups[groupID] = entry
+	}
+	b.mediaGroupsMu.Unlock()
+
+	entry.mu.Lock()
+	entry.messages = append(entry.messages, msg)
+	count := len(entry.messages)
+
+	// Reset or start the flush timer
+	if entry.timer != nil {
+		entry.timer.Stop()
+	}
+
+	// Flush immediately if we've hit Telegram's max media group size
+	if count >= maxMediaGroupSize {
+		entry.mu.Unlock()
+		b.flushMediaGroup(ctx, groupID)
+		return
+	}
+
+	entry.timer = time.AfterFunc(mediaGroupFlushDelay, func() {
+		if ctx.Err() != nil {
+			// Context cancelled, clean up
+			b.mediaGroupsMu.Lock()
+			delete(b.mediaGroups, groupID)
+			b.mediaGroupsMu.Unlock()
+			return
+		}
+		b.flushMediaGroup(ctx, groupID)
+	})
+	entry.mu.Unlock()
+}
+
+// flushMediaGroup removes the group entry from the map and processes all buffered messages.
+func (b *Bot) flushMediaGroup(ctx context.Context, groupID string) {
+	b.mediaGroupsMu.Lock()
+	entry, ok := b.mediaGroups[groupID]
+	delete(b.mediaGroups, groupID)
+	b.mediaGroupsMu.Unlock()
+
+	if !ok {
+		return
+	}
+
+	entry.mu.Lock()
+	if entry.timer != nil {
+		entry.timer.Stop()
+	}
+	messages := entry.messages
+	entry.mu.Unlock()
+
+	if len(messages) == 0 {
+		return
+	}
+
+	// If only one photo arrived, handle as regular single photo
+	if len(messages) == 1 {
+		b.handlePhoto(ctx, messages[0])
+		return
+	}
+
+	b.handleMediaGroup(ctx, messages)
 }
 
 func (b *Bot) send(chatID int64, text string) {

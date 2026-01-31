@@ -107,16 +107,16 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
       <header className="shrink-0 px-4 py-3 safe-area-top border-b border-border flex items-center gap-3">
         <button
           onClick={handleBack}
-          className="p-1 -ml-1 text-foreground hover:text-accent transition-colors"
+          className="p-2 -ml-2 text-foreground hover:text-accent transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1 min-w-0 flex items-center gap-3">
-          <div className="rounded-lg bg-accent-muted p-2 shrink-0">
-            <Icon className="h-4 w-4 text-accent" />
+          <div className="rounded-full bg-foreground p-2 shrink-0">
+            <Icon className="h-4 w-4 text-background" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold truncate text-foreground">
+            <h1 className="text-base font-bold truncate text-foreground">
               {item.title || 'Untitled'}
             </h1>
             <p className="text-xs text-muted-foreground font-mono">
@@ -134,50 +134,66 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
       </header>
 
       {/* Content */}
-      <main className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 safe-area-bottom">
-        {/* Image */}
-        {item.image_path && (
+      <main className="flex-1 min-h-0 overflow-y-auto p-5 safe-area-bottom">
+        {/* Images */}
+        {item.image_paths && item.image_paths.length > 0 ? (
+          <section className="space-y-3">
+            {item.image_paths.map((_, index) => (
+              <img
+                key={index}
+                src={`/api/items/${item.id}/images/${index}`}
+                alt={`${item.title || 'Item image'} (${index + 1}/${item.image_paths!.length})`}
+                className="w-full rounded-xl border border-border"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+                loading="lazy"
+              />
+            ))}
+          </section>
+        ) : item.image_path ? (
           <section>
             <img
               src={`/api/items/${item.id}/image`}
               alt={item.title || 'Item image'}
-              className="w-full rounded-lg border border-border"
+              className="w-full rounded-xl border border-border"
               onError={(e) => {
-                // Hide image on error - graceful degradation
                 e.currentTarget.style.display = 'none'
               }}
               loading="lazy"
             />
           </section>
-        )}
+        ) : null}
 
         {/* Tags */}
         {item.tags && item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {item.tags.map((tag) => (
-              <TagPill
-                key={tag}
-                tag={tag}
-                onClick={onTagClick ? () => handleTagClick(tag) : undefined}
-              />
-            ))}
-          </div>
+          <section className={item.image_path ? 'catalog-divider' : 'mt-0'}>
+            <div className="flex flex-wrap gap-2">
+              {item.tags.map((tag) => (
+                <TagPill
+                  key={tag}
+                  tag={tag}
+                  onClick={onTagClick ? () => handleTagClick(tag) : undefined}
+                />
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Summary */}
         {item.summary && (
-          <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <section className="catalog-divider">
+            <h2 className="text-sm font-bold text-foreground mb-3">
               Summary
             </h2>
-            <p className="text-sm leading-relaxed text-foreground">{item.summary}</p>
+            <p className="text-base leading-relaxed text-foreground">{item.summary}</p>
           </section>
         )}
 
         {/* Content */}
         {item.content && (
-          <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <section className="catalog-divider">
+            <h2 className="text-sm font-bold text-foreground mb-3">
               Content
             </h2>
             <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
@@ -188,13 +204,13 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
 
         {/* URL */}
         {item.url && (
-          <section>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <section className="catalog-divider">
+            <h2 className="text-sm font-bold text-foreground mb-3">
               Source
             </h2>
             <button
               onClick={handleOpenLink}
-              className="text-sm text-accent hover:text-accent-light break-all text-left transition-colors"
+              className="text-sm text-accent hover:text-accent-hover break-all text-left transition-colors"
             >
               {item.url}
             </button>
@@ -203,14 +219,16 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
 
         {/* Open Original Button */}
         {item.url && (
-          <Button
-            variant="default"
-            className="w-full"
-            onClick={handleOpenLink}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open Original
-          </Button>
+          <div className="catalog-divider">
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={handleOpenLink}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Original
+            </Button>
+          </div>
         )}
       </main>
     </div>

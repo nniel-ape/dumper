@@ -34,6 +34,7 @@ var ru = map[MsgKey]string{
 	MsgProcessingLink:   "⏳ Обрабатываю ссылку...",
 	MsgProcessingNote:   "⏳ Обрабатываю заметку...",
 	MsgSavingImage:      "📷 Сохраняю изображение...",
+	MsgSavingImages:     "📷 Сохраняю %d изображений...",
 	MsgSearching:        "🔍 Ищу: <b>%s</b>...",
 	MsgSearchUsage:      "Использование: /search [запрос]\nПример: /search golang concurrency",
 	MsgRecentItems:      "📚 <b>Последние записи:</b>\n\n",
@@ -47,7 +48,8 @@ var ru = map[MsgKey]string{
 
 	// Success messages
 	MsgSaved:      "✅ <b>Сохранено!</b>",
-	MsgImageSaved: "✅ <b>Изображение сохранено!</b>",
+	MsgImageSaved:  "✅ <b>Изображение сохранено!</b>",
+	MsgImagesSaved: "✅ <b>%d изображений сохранено!</b>",
 
 	// Empty states
 	MsgNoResults: "Ничего не найдено.",

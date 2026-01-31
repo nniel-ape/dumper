@@ -125,6 +125,13 @@ CREATE INDEX IF NOT EXISTS idx_items_created ON items(created_at DESC);
 PRAGMA foreign_keys=ON;
 `
 
+// Migration to add image_paths column for media group support
+const migrationAddImagePaths = `
+ALTER TABLE items ADD COLUMN image_paths TEXT;
+UPDATE items SET image_paths = '["' || image_path || '"]'
+WHERE image_path IS NOT NULL AND image_path != '' AND (image_paths IS NULL OR image_paths = '');
+`
+
 func RunMigrations(db *sql.DB) error {
 	if _, err := db.Exec(migrationSQL); err != nil {
 		return fmt.Errorf("exec migration: %w", err)
@@ -150,6 +157,9 @@ func RunMigrations(db *sql.DB) error {
 			_, _ = db.Exec(`DELETE FROM items WHERE id = '__test__'`)
 		}
 	}
+
+	// Add image_paths column for media group support (ignore error if column exists)
+	_, _ = db.Exec(migrationAddImagePaths)
 
 	return nil
 }

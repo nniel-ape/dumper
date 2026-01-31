@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,11 +28,21 @@ func (v *VaultStore) CreateItem(item *Item) error {
 		_ = tx.Rollback() // Rollback is always safe to call; ignore error as commit handles success
 	}()
 
+	// Serialize ImagePaths as JSON
+	var imagePathsJSON sql.NullString
+	if len(item.ImagePaths) > 0 {
+		data, err := json.Marshal(item.ImagePaths)
+		if err != nil {
+			return fmt.Errorf("marshal image_paths: %w", err)
+		}
+		imagePathsJSON = sql.NullString{String: string(data), Valid: true}
+	}
+
 	_, err = tx.Exec(`
-		INSERT INTO items (id, type, url, title, content, summary, raw_content, image_path, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO items (id, type, url, title, content, summary, raw_content, image_path, image_paths, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.ID, item.Type, item.URL, item.Title, item.Content, item.Summary, item.RawContent, item.ImagePath,
-		item.CreatedAt, item.UpdatedAt,
+		imagePathsJSON, item.CreatedAt, item.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("insert item: %w", err)
@@ -46,12 +57,12 @@ func (v *VaultStore) CreateItem(item *Item) error {
 
 func (v *VaultStore) GetItem(id string) (*Item, error) {
 	item := &Item{}
-	var url, content, summary, imagePath sql.NullString
+	var url, content, summary, imagePath, imagePathsJSON sql.NullString
 	err := v.db.QueryRow(`
-		SELECT id, type, url, title, content, summary, image_path, created_at, updated_at
+		SELECT id, type, url, title, content, summary, image_path, image_paths, created_at, updated_at
 		FROM items WHERE id = ?`, id,
 	).Scan(&item.ID, &item.Type, &url, &item.Title, &content, &summary, &imagePath,
-		&item.CreatedAt, &item.UpdatedAt)
+		&imagePathsJSON, &item.CreatedAt, &item.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -63,6 +74,7 @@ func (v *VaultStore) GetItem(id string) (*Item, error) {
 	item.Content = content.String
 	item.Summary = summary.String
 	item.ImagePath = imagePath.String
+	item.ImagePaths = parseImagePaths(imagePathsJSON, imagePath)
 
 	tags, err := v.getItemTags(item.ID)
 	if err != nil {
@@ -74,7 +86,7 @@ func (v *VaultStore) GetItem(id string) (*Item, error) {
 
 func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 	rows, err := v.db.Query(`
-		SELECT id, type, url, title, content, summary, image_path, created_at, updated_at
+		SELECT id, type, url, title, content, summary, image_path, image_paths, created_at, updated_at
 		FROM items ORDER BY created_at DESC LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("query items: %w", err)
@@ -86,15 +98,16 @@ func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 	var items []Item
 	for rows.Next() {
 		var item Item
-		var url, content, summary, imagePath sql.NullString
+		var url, content, summary, imagePath, imagePathsJSON sql.NullString
 		if err := rows.Scan(&item.ID, &item.Type, &url, &item.Title, &content,
-			&summary, &imagePath, &item.CreatedAt, &item.UpdatedAt); err != nil {
+			&summary, &imagePath, &imagePathsJSON, &item.CreatedAt, &item.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan item: %w", err)
 		}
 		item.URL = url.String
 		item.Content = content.String
 		item.Summary = summary.String
 		item.ImagePath = imagePath.String
+		item.ImagePaths = parseImagePaths(imagePathsJSON, imagePath)
 		tags, err := v.getItemTags(item.ID)
 		if err != nil {
 			slog.Error("failed to load tags for item", "item_id", item.ID, "error", err)
@@ -113,7 +126,7 @@ func (v *VaultStore) ListItems(limit, offset int) ([]Item, error) {
 
 func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, error) {
 	rows, err := v.db.Query(`
-		SELECT DISTINCT i.id, i.type, i.url, i.title, i.content, i.summary, i.image_path, i.created_at, i.updated_at
+		SELECT DISTINCT i.id, i.type, i.url, i.title, i.content, i.summary, i.image_path, i.image_paths, i.created_at, i.updated_at
 		FROM items i
 		JOIN item_tags it ON i.id = it.item_id
 		JOIN tags t ON it.tag_id = t.id
@@ -129,15 +142,16 @@ func (v *VaultStore) ListItemsByTag(tag string, limit, offset int) ([]Item, erro
 	var items []Item
 	for rows.Next() {
 		var item Item
-		var url, content, summary, imagePath sql.NullString
+		var url, content, summary, imagePath, imagePathsJSON sql.NullString
 		if err := rows.Scan(&item.ID, &item.Type, &url, &item.Title, &content,
-			&summary, &imagePath, &item.CreatedAt, &item.UpdatedAt); err != nil {
+			&summary, &imagePath, &imagePathsJSON, &item.CreatedAt, &item.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan item: %w", err)
 		}
 		item.URL = url.String
 		item.Content = content.String
 		item.Summary = summary.String
 		item.ImagePath = imagePath.String
+		item.ImagePaths = parseImagePaths(imagePathsJSON, imagePath)
 		tags, err := v.getItemTags(item.ID)
 		if err != nil {
 			slog.Error("failed to load tags for item", "item_id", item.ID, "error", err)
@@ -159,7 +173,7 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 	sanitizedQuery := sanitizeFTS5Query(query)
 
 	rows, err := v.db.Query(`
-		SELECT i.id, i.type, i.url, i.title, i.content, i.summary, i.image_path, i.created_at, i.updated_at,
+		SELECT i.id, i.type, i.url, i.title, i.content, i.summary, i.image_path, i.image_paths, i.created_at, i.updated_at,
 		       snippet(items_fts, 1, '<mark>', '</mark>', '...', 32) as snippet,
 		       bm25(items_fts) as score
 		FROM items_fts
@@ -177,9 +191,9 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 	var results []SearchResult
 	for rows.Next() {
 		var r SearchResult
-		var url, content, summary, imagePath sql.NullString
+		var url, content, summary, imagePath, imagePathsJSON sql.NullString
 		if err := rows.Scan(&r.Item.ID, &r.Item.Type, &url, &r.Item.Title,
-			&content, &summary, &imagePath, &r.Item.CreatedAt, &r.Item.UpdatedAt,
+			&content, &summary, &imagePath, &imagePathsJSON, &r.Item.CreatedAt, &r.Item.UpdatedAt,
 			&r.Snippet, &r.Score); err != nil {
 			return nil, fmt.Errorf("scan result: %w", err)
 		}
@@ -187,6 +201,7 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 		r.Item.Content = content.String
 		r.Item.Summary = summary.String
 		r.Item.ImagePath = imagePath.String
+		r.Item.ImagePaths = parseImagePaths(imagePathsJSON, imagePath)
 		tags, err := v.getItemTags(r.Item.ID)
 		if err != nil {
 			slog.Error("failed to load tags for item", "item_id", r.Item.ID, "error", err)
@@ -204,7 +219,7 @@ func (v *VaultStore) Search(query string, limit int) ([]SearchResult, error) {
 }
 
 func (v *VaultStore) DeleteItem(id string) error {
-	// Get item to check for image path before deletion
+	// Get item to check for image paths before deletion
 	item, err := v.GetItem(id)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("get item: %w", err)
@@ -216,15 +231,36 @@ func (v *VaultStore) DeleteItem(id string) error {
 		return err
 	}
 
-	// Clean up image file if it exists
-	if item != nil && item.ImagePath != "" {
-		fullPath := filepath.Join(v.userDir, item.ImagePath)
-		if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
-			// Log error but don't fail the deletion - database record is already gone
-			slog.Warn("failed to delete image file", "path", fullPath, "error", err)
+	// Clean up image files
+	if item != nil {
+		paths := item.ImagePaths
+		if len(paths) == 0 && item.ImagePath != "" {
+			paths = []string{item.ImagePath}
+		}
+		for _, p := range paths {
+			fullPath := filepath.Join(v.userDir, p)
+			if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
+				slog.Warn("failed to delete image file", "path", fullPath, "error", err)
+			}
 		}
 	}
 
+	return nil
+}
+
+// parseImagePaths deserializes the image_paths JSON column with fallback
+// to wrapping the legacy image_path in a slice for backward compatibility.
+func parseImagePaths(imagePathsJSON, imagePath sql.NullString) []string {
+	if imagePathsJSON.Valid && imagePathsJSON.String != "" {
+		var paths []string
+		if err := json.Unmarshal([]byte(imagePathsJSON.String), &paths); err == nil && len(paths) > 0 {
+			return paths
+		}
+	}
+	// Fallback: wrap legacy single image_path
+	if imagePath.Valid && imagePath.String != "" {
+		return []string{imagePath.String}
+	}
 	return nil
 }
 

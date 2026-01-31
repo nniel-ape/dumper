@@ -13,14 +13,16 @@ type Server struct {
 	stores    *store.Manager
 	botToken  string
 	llmClient *llm.Client
+	devMode   bool
 	mux       *http.ServeMux
 }
 
-func NewServer(stores *store.Manager, botToken string, llmClient *llm.Client) *Server {
+func NewServer(stores *store.Manager, botToken string, llmClient *llm.Client, devMode bool) *Server {
 	s := &Server{
 		stores:    stores,
 		botToken:  botToken,
 		llmClient: llmClient,
+		devMode:   devMode,
 		mux:       http.NewServeMux(),
 	}
 	s.routes()
@@ -33,6 +35,7 @@ func (s *Server) routes() {
 	api.HandleFunc("GET /items", s.handleListItems)
 	api.HandleFunc("GET /items/{id}", s.handleGetItem)
 	api.HandleFunc("GET /items/{id}/image", s.handleGetItemImage)
+	api.HandleFunc("GET /items/{id}/images/{index}", s.handleGetItemImageByIndex)
 	api.HandleFunc("DELETE /items/{id}", s.handleDeleteItem)
 	api.HandleFunc("GET /search", s.handleSearch)
 	api.HandleFunc("GET /tags", s.handleGetTags)

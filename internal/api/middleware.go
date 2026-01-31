@@ -27,7 +27,13 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := s.validateInitData(initData)
+		var userID int64
+		var err error
+		if s.devMode {
+			userID, err = s.extractUserID(initData)
+		} else {
+			userID, err = s.validateInitData(initData)
+		}
 		if err != nil {
 			http.Error(w, "invalid init data", http.StatusUnauthorized)
 			return
@@ -95,6 +101,31 @@ func (s *Server) validateInitData(initData string) (int64, error) {
 	}
 
 	// Extract user ID from user JSON
+	userJSON := values.Get("user")
+	if userJSON == "" {
+		return 0, fmt.Errorf("missing user data")
+	}
+
+	var userData struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal([]byte(userJSON), &userData); err != nil {
+		return 0, fmt.Errorf("parse user data: %w", err)
+	}
+
+	if userData.ID == 0 {
+		return 0, fmt.Errorf("invalid user id")
+	}
+
+	return userData.ID, nil
+}
+
+func (s *Server) extractUserID(initData string) (int64, error) {
+	values, err := url.ParseQuery(initData)
+	if err != nil {
+		return 0, err
+	}
+
 	userJSON := values.Get("user")
 	if userJSON == "" {
 		return 0, fmt.Errorf("missing user data")

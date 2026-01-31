@@ -12,6 +12,7 @@ type Config struct {
 	LogLevel        string `long:"log-level" env:"LOG_LEVEL" default:"info" description:"Log level: debug|info|warn|error"`
 	OpenRouterModel string `long:"openrouter-model" env:"OPENROUTER_MODEL" default:"anthropic/claude-3-haiku" description:"OpenRouter model ID"`
 	WebAppURL       string `long:"webapp-url" env:"WEBAPP_URL" description:"Telegram Mini App URL"`
+	DevMode         bool   `long:"dev-mode" env:"DEV_MODE" description:"Skip Telegram init data validation (local dev only)"`
 }
 
 func Load() (*Config, error) {

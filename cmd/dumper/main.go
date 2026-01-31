@@ -80,7 +80,7 @@ func run() error {
 	}
 
 	// Initialize API server
-	apiServer := api.NewServer(stores, cfg.TelegramToken, llmClient)
+	apiServer := api.NewServer(stores, cfg.TelegramToken, llmClient, cfg.DevMode)
 
 	// Setup graceful shutdown
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

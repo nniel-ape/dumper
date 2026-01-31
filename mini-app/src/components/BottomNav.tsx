@@ -25,7 +25,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-surface-elevated border-t border-border safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-surface-elevated shadow-md border-t-2 border-border-subtle safe-area-bottom">
       <div className="flex justify-around items-center h-14">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -39,7 +39,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             )}
           >
             <Icon className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px] font-medium">{label}</span>
+            <span className={cn("text-[10px]", activeTab === id ? "font-semibold" : "font-medium")}>{label}</span>
           </button>
         ))}
       </div>

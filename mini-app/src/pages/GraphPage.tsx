@@ -28,20 +28,20 @@ const nodeTypes: NodeTypes = {
   item: ItemNode,
 }
 
-// Type-based colors for minimap (must match ItemNode colors)
+// Warm palette minimap colors (must match ItemNode colors)
 const minimapTypeColors: Record<string, string> = {
-  link: 'hsl(239 84% 74%)',
-  note: 'hsl(142 76% 55%)',
-  image: 'hsl(330 81% 60%)',
-  search: 'hsl(258 90% 66%)',
+  link: 'hsl(200 20% 55%)',
+  note: 'hsl(30 40% 55%)',
+  image: 'hsl(25 65% 50%)',
+  search: 'hsl(160 25% 50%)',
 }
 
-// Default edge marker
+// Default edge marker — warm accent teal
 const defaultMarker = {
   type: MarkerType.ArrowClosed,
   width: 16,
   height: 16,
-  color: 'hsl(239 84% 74% / 0.6)',
+  color: 'hsl(200 20% 55% / 0.5)',
 }
 
 interface GraphPageProps {
@@ -184,7 +184,7 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
       markerEnd: defaultMarker,
       style: {
         strokeWidth: Math.max(1.5, rel.strength * 2.5),
-        stroke: 'hsl(239 84% 74% / 0.6)',
+        stroke: 'hsl(200 20% 55% / 0.5)',
       },
       pathOptions: {
         curvature: 0.25,
@@ -254,13 +254,6 @@ export function GraphPage({ onItemSelect }: GraphPageProps) {
         bottom: 'calc(3.5rem + var(--tg-total-safe-area-bottom, 0px))',
       }}
     >
-      {/* Aurora glow behind graph */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full aurora-orb-1 blur-3xl opacity-40" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full aurora-orb-2 blur-3xl opacity-40" />
-      </div>
-
-      {/* ReactFlow container */}
       <div className="absolute inset-0">
         <ReactFlowProvider>
           <GraphFlow

@@ -31,10 +31,10 @@ export function EmptyState({ type, query }: EmptyStateProps) {
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="rounded-full bg-accent-muted p-4 mb-4">
+      <div className="rounded-full bg-accent-muted p-4 mb-4 shadow-md border-2 border-border-subtle">
         <Icon className="h-8 w-8 text-accent" />
       </div>
-      <h3 className="text-lg font-semibold mb-1 text-foreground">{config.title}</h3>
+      <h3 className="text-lg font-bold mb-1 text-foreground">{config.title}</h3>
       <p className="text-sm text-muted-foreground max-w-xs">
         {type === 'search' && query
           ? `No results for "${query}"`

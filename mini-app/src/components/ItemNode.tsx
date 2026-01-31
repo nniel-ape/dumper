@@ -1,6 +1,5 @@
 import { memo, useMemo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { Link2, FileText, Image, Search } from 'lucide-react'
 import type { Item } from '@/api'
 
 export interface ItemNodeData {
@@ -13,36 +12,28 @@ interface ItemNodeProps {
   selected?: boolean
 }
 
-// Type-based color schemes (defined outside component for performance)
+// Warm catalog palette (defined outside component for performance)
 const typeColors = {
   link: {
-    bg: 'hsl(239 84% 74% / 0.15)',
-    border: 'hsl(239 84% 74% / 0.4)',
-    icon: 'hsl(239 84% 74%)',
+    bg: 'hsl(200 20% 55% / 0.12)',
+    border: 'hsl(200 20% 55% / 0.35)',
+    icon: 'hsl(200 20% 55%)',
   },
   note: {
-    bg: 'hsl(142 76% 55% / 0.12)',
-    border: 'hsl(142 76% 55% / 0.35)',
-    icon: 'hsl(142 76% 55%)',
+    bg: 'hsl(30 40% 55% / 0.12)',
+    border: 'hsl(30 40% 55% / 0.35)',
+    icon: 'hsl(30 40% 55%)',
   },
   image: {
-    bg: 'hsl(330 81% 60% / 0.12)',
-    border: 'hsl(330 81% 60% / 0.35)',
-    icon: 'hsl(330 81% 60%)',
+    bg: 'hsl(25 65% 50% / 0.12)',
+    border: 'hsl(25 65% 50% / 0.35)',
+    icon: 'hsl(25 65% 50%)',
   },
   search: {
-    bg: 'hsl(258 90% 66% / 0.12)',
-    border: 'hsl(258 90% 66% / 0.35)',
-    icon: 'hsl(258 90% 66%)',
+    bg: 'hsl(160 25% 50% / 0.12)',
+    border: 'hsl(160 25% 50% / 0.35)',
+    icon: 'hsl(160 25% 50%)',
   },
-} as const
-
-// Map item types to icons
-const typeIcons = {
-  link: Link2,
-  note: FileText,
-  image: Image,
-  search: Search,
 } as const
 
 type ItemType = keyof typeof typeColors
@@ -64,7 +55,6 @@ export const ItemNode = memo(function ItemNode({ data, selected }: ItemNodeProps
   }, [connectionCount])
 
   const colors = typeColors[itemType]
-  const IconComponent = typeIcons[itemType]
 
   // Width classes by tier
   const widthClass = {
@@ -93,16 +83,13 @@ export const ItemNode = memo(function ItemNode({ data, selected }: ItemNodeProps
         }}
       >
         <div className="flex items-start gap-2">
-          {/* Type icon badge */}
-          <div
-            className="rounded-lg p-1.5 shrink-0"
-            style={{ background: colors.border }}
+          {/* Text type badge */}
+          <span
+            className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono shrink-0"
+            style={{ background: colors.border, color: colors.icon }}
           >
-            <IconComponent
-              className="h-3.5 w-3.5"
-              style={{ color: colors.icon }}
-            />
-          </div>
+            {item.type}
+          </span>
 
           {/* Title */}
           <p className="text-xs font-medium leading-tight line-clamp-2 text-foreground min-w-0">

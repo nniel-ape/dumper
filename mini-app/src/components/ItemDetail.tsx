@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ExternalLink, Trash2, Link2, FileText, Image, Search } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Trash2 } from 'lucide-react'
 import { TagPill } from './TagPill'
 import { openLink, hapticFeedback, backButton } from '@/lib/telegram'
 import { useDeleteItem } from '@/hooks'
@@ -10,13 +10,6 @@ interface ItemDetailProps {
   item: Item
   onBack: () => void
   onTagClick?: (tag: string) => void
-}
-
-const typeIcons: Record<string, React.ElementType> = {
-  link: Link2,
-  note: FileText,
-  image: Image,
-  search: Search,
 }
 
 function formatDateTime(dateString: string): string {
@@ -32,7 +25,6 @@ function formatDateTime(dateString: string): string {
 
 export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
   const deleteItem = useDeleteItem()
-  const Icon = typeIcons[item.type] || FileText
 
   // Handle browser/Telegram back button
   useEffect(() => {
@@ -112,9 +104,9 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1 min-w-0 flex items-center gap-3">
-          <div className="rounded-full bg-foreground p-2 shrink-0">
-            <Icon className="h-4 w-4 text-background" />
-          </div>
+          <span className="rounded-md bg-foreground text-background px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono shrink-0">
+            {item.type}
+          </span>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate text-foreground">
               {item.title || 'Untitled'}
@@ -143,7 +135,7 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
                 key={index}
                 src={`/api/items/${item.id}/images/${index}`}
                 alt={`${item.title || 'Item image'} (${index + 1}/${item.image_paths!.length})`}
-                className="w-full rounded-xl border border-border"
+                className="w-full rounded-xl border-2 border-border"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                 }}
@@ -156,7 +148,7 @@ export function ItemDetail({ item, onBack, onTagClick }: ItemDetailProps) {
             <img
               src={`/api/items/${item.id}/image`}
               alt={item.title || 'Item image'}
-              className="w-full rounded-xl border border-border"
+              className="w-full rounded-xl border-2 border-border"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}

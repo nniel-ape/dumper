@@ -12,81 +12,91 @@
     --tg-total-safe-area-top: 0px;
     --tg-total-safe-area-bottom: 0px;
 
-    /* Notebook - Light Mode */
-    --background: 40 25% 97%;
+    /* Warm Catalog - Light Mode: cream desk + white cards */
+    --background: 35 18% 93%;
     --foreground: 30 8% 20%;
 
-    /* Surfaces */
-    --surface: 35 20% 94%;
-    --surface-elevated: 38 22% 96%;
-    --border-subtle: 35 15% 88%;
+    /* Surfaces — near-white cards pop against cream desk */
+    --surface: 38 20% 99%;
+    --surface-elevated: 40 15% 99%;
+    --border-subtle: 33 12% 86%;
 
     /* Text */
     --text-primary: 30 8% 20%;
     --text-secondary: 30 6% 42%;
     --text-muted: 30 5% 58%;
 
-    /* Accent - Muted teal (notebook cover) */
-    --accent: 200 18% 46%;
-    --accent-hover: 25 60% 50%;
-    --accent-muted: 200 18% 46% / 0.08;
+    /* Shadows - neumorphic-lite, stronger for depth on cream */
+    --shadow-sm: 0 1px 4px hsl(30 15% 20% / 0.10), 0 1px 2px hsl(30 15% 20% / 0.06);
+    --shadow-md: 0 4px 14px hsl(30 15% 20% / 0.12), 0 2px 6px hsl(30 15% 20% / 0.08);
+    --shadow-lg: 0 8px 28px hsl(30 15% 20% / 0.15), 0 4px 10px hsl(30 15% 20% / 0.08);
+
+    /* Accent - Deeper teal for better contrast */
+    --accent: 200 22% 42%;
+    --accent-hover: 25 65% 48%;
+    --accent-muted: 200 18% 46% / 0.10;
     --accent-foreground: 40 25% 97%;
 
-    /* shadcn compatibility */
-    --card: 35 20% 94%;
+    /* shadcn compatibility — synced to new surface values */
+    --card: 38 20% 99%;
     --card-foreground: 30 8% 20%;
-    --popover: 38 22% 96%;
+    --popover: 40 15% 99%;
     --popover-foreground: 30 8% 20%;
     --primary: 200 18% 46%;
     --primary-foreground: 40 25% 97%;
-    --secondary: 35 18% 90%;
+    --secondary: 35 14% 92%;
     --secondary-foreground: 30 8% 20%;
-    --muted: 35 18% 90%;
+    --muted: 35 14% 92%;
     --muted-foreground: 30 6% 42%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 40 25% 97%;
-    --border: 35 15% 88%;
-    --input: 35 15% 88%;
+    --border: 33 12% 86%;
+    --input: 33 12% 86%;
     --ring: 200 18% 46%;
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 
   .dark {
-    /* Notebook - Dark Mode */
-    --background: 30 12% 12%;
+    /* Warm Catalog - Dark Mode: wider surface gaps for visible separation */
+    --background: 30 8% 10%;
     --foreground: 40 20% 92%;
 
-    /* Surfaces */
-    --surface: 30 10% 16%;
-    --surface-elevated: 30 12% 18%;
-    --border-subtle: 30 8% 24%;
+    /* Surfaces — +10% gap from bg, visible card separation */
+    --surface: 30 14% 20%;
+    --surface-elevated: 30 14% 24%;
+    --border-subtle: 30 10% 30%;
 
-    /* Text */
+    /* Text — bumped for readability */
     --text-primary: 40 20% 92%;
-    --text-secondary: 30 8% 62%;
-    --text-muted: 30 6% 48%;
+    --text-secondary: 30 8% 65%;
+    --text-muted: 30 6% 52%;
 
-    /* Accent - Warmer in dark */
+    /* Shadows - dark mode with inset top-edge highlight for neumorphic depth */
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.25), 0 1px 2px hsl(0 0% 0% / 0.15), inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    --shadow-md: 0 4px 12px hsl(0 0% 0% / 0.3), 0 2px 4px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    --shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.35), 0 4px 8px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(0 0% 100% / 0.06);
+
+    /* Accent - Warmer in dark, nearly doubled muted opacity */
     --accent: 200 20% 55%;
     --accent-hover: 25 65% 58%;
-    --accent-muted: 200 20% 55% / 0.12;
-    --accent-foreground: 30 12% 12%;
+    --accent-muted: 200 22% 55% / 0.22;
+    --accent-foreground: 30 8% 10%;
 
-    /* shadcn compatibility */
-    --card: 30 10% 16%;
+    /* shadcn compatibility — synced to new surface values */
+    --card: 30 14% 20%;
     --card-foreground: 40 20% 92%;
-    --popover: 30 12% 18%;
+    --popover: 30 14% 24%;
     --popover-foreground: 40 20% 92%;
     --primary: 200 20% 55%;
-    --primary-foreground: 30 12% 12%;
-    --secondary: 30 10% 22%;
+    --primary-foreground: 30 8% 10%;
+    --secondary: 30 12% 26%;
     --secondary-foreground: 40 20% 92%;
-    --muted: 30 10% 22%;
-    --muted-foreground: 30 8% 62%;
+    --muted: 30 12% 26%;
+    --muted-foreground: 30 8% 65%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 40 20% 92%;
-    --border: 30 8% 24%;
-    --input: 30 8% 24%;
+    --border: 30 10% 30%;
+    --input: 30 10% 30%;
     --ring: 200 20% 55%;
   }
 }
@@ -149,17 +159,26 @@
     overflow: hidden;
   }
 
-  /* Card utilities - border-based depth */
+  /* Card utilities - thick borders as primary card definition */
   .card-base {
-    @apply rounded-lg;
+    @apply rounded-2xl;
     background: hsl(var(--surface));
-    border: 1px solid hsl(var(--border-subtle));
+    border: 2px solid hsl(var(--border-subtle));
+    box-shadow: var(--shadow-sm);
   }
 
   .card-elevated {
-    @apply rounded-lg;
+    @apply rounded-2xl;
     background: hsl(var(--surface-elevated));
-    border: 1px solid hsl(var(--border));
+    border: 2px solid hsl(var(--border));
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Catalog-style horizontal divider between sections */
+  .catalog-divider {
+    border-top: 1px solid hsl(var(--border));
+    margin-top: 1rem;
+    padding-top: 1rem;
   }
 }
 
@@ -184,7 +203,7 @@
 
 /* React Flow Controls - Notebook styling */
 .react-flow-controls {
-  @apply rounded-lg overflow-hidden;
+  @apply rounded-xl overflow-hidden;
   background: hsl(var(--surface-elevated)) !important;
   border: 1px solid hsl(var(--border)) !important;
 }

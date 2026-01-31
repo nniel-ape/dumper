@@ -55,7 +55,7 @@ export function AIAnswerCard({ response, isLoading, onSourceClick }: AIAnswerCar
             </button>
 
             {showSources && (
-              <div className="mt-2 -mx-4 border-t border-glass-border">
+              <div className="mt-2 -mx-4 border-t border-border-subtle">
                 {response.sources.map((result) => (
                   <ItemCard
                     key={result.item.id}

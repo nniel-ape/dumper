@@ -55,6 +55,11 @@ export default {
         'text-secondary': 'hsl(var(--text-secondary))',
         'text-muted': 'hsl(var(--text-muted))',
       },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

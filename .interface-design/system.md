@@ -6,7 +6,7 @@
 
 **Task:** Quickly find saved items, review summaries, follow trails through tags and relationships. Capture on mobile, review on desktop.
 
-**Feel:** Warm like a notebook. Personal, comfortable, inviting to browse. Not cold/futuristic — grounded like organizing a personal library.
+**Feel:** Warm like a curated notebook, structured like a printed catalog, tactile like a well-made object. Not cold/futuristic — grounded like organizing a personal library.
 
 ---
 
@@ -32,16 +32,16 @@
 ### Accent
 
 **Colors:**
-- Primary: `hsl(200 18% 46%)` — muted teal (like aged notebook covers)
-- Hover: `hsl(25 60% 50%)` — rust/bookmark orange for interactive states
-- Muted: `hsl(200 18% 46% / 0.08)` — subtle teal backgrounds
+- Primary: `hsl(200 22% 42%)` — deeper teal (aged notebook covers)
+- Hover: `hsl(25 65% 48%)` — richer rust/bookmark orange for interactive states
+- Muted: `hsl(200 22% 42% / 0.08)` — subtle teal backgrounds
 
 **Dark mode:**
 - Primary: `hsl(200 20% 55%)` — slightly brighter teal
 - Hover: `hsl(25 65% 58%)` — warmer rust
 - Muted: `hsl(200 20% 55% / 0.12)` — more opacity for visibility
 
-**Why:** Teal feels like faded notebook covers or library cards. Rust/orange for hover creates warmth (like bookmarks). No indigo/violet gradients — those feel futuristic.
+**Why:** Teal feels like faded notebook covers or library cards. Rust/orange for hover creates warmth. No indigo/violet gradients — those feel futuristic.
 
 ### Text
 
@@ -61,26 +61,41 @@
 
 ## Depth
 
-**Method:** Borders only, no shadows or glassmorphism.
+**Method:** Neumorphic-lite — stronger warm shadows with tactile depth. Cards clearly raised, inputs clearly recessed.
 
-**Pattern:**
+**Shadow tokens (v3 — increased intensity):**
+```css
+/* Light mode */
+--shadow-sm: 0 1px 3px hsl(30 15% 20% / 0.08), 0 1px 2px hsl(30 15% 20% / 0.04);
+--shadow-md: 0 4px 12px hsl(30 15% 20% / 0.1), 0 2px 4px hsl(30 15% 20% / 0.06);
+--shadow-lg: 0 8px 24px hsl(30 15% 20% / 0.12), 0 4px 8px hsl(30 15% 20% / 0.06);
+
+/* Dark mode */
+--shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.25), 0 1px 2px hsl(0 0% 0% / 0.15);
+--shadow-md: 0 4px 12px hsl(0 0% 0% / 0.3), 0 2px 4px hsl(0 0% 0% / 0.2);
+--shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.35), 0 4px 8px hsl(0 0% 0% / 0.2);
+```
+
+**Card pattern:**
 ```css
 .card-base {
   background: hsl(var(--surface));
   border: 1px solid hsl(var(--border-subtle));
-  border-radius: 0.5rem; /* 8px */
+  border-radius: 1rem; /* 16px */
+  box-shadow: var(--shadow-sm);
 }
 
 .card-elevated {
   background: hsl(var(--surface-elevated));
   border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
 }
 ```
 
-**Hover states:** Change border color to accent, shift background slightly.
+**Hover states:** Shift shadow up (`shadow-sm` → `shadow-md`) + border color to accent. Cards feel physically lifted on hover.
 
-**Why:** Cards sit on the page, not float above it. Borders feel like pen-drawn boxes in a notebook. Removed all backdrop-blur, shadows, and glass effects.
+**Why:** Stronger warm-tinted shadows (v3) create unmistakable tactile depth. 16px radius (up from 12px) references soft neumorphic shapes. Deeper inset shadows on inputs create clear recessed feel.
 
 ---
 
@@ -88,14 +103,18 @@
 
 **Fonts:**
 - Sans: Plus Jakarta Sans — warm, readable, not overused
-- Mono: Roboto Mono — for dates and metadata labels
+- Mono: Roboto Mono — for dates, metadata, and dramatic stat numbers
 
 **Scale:**
-- Headings: `leading-snug` (1.375) — tighter for density
-- Body: `leading-relaxed` (1.625) — comfortable reading
-- Metadata: `text-xs font-mono tracking-tight` — compact labels
+- App title: `text-2xl font-bold tracking-tight` — dominant editorial header
+- Stat numbers: `text-5xl font-bold font-mono tabular-nums` — dramatic display (refs #4, #8)
+- Card titles: `text-base font-bold leading-snug` — scannable, bold
+- Section headers: `text-sm font-bold text-foreground` — editorial, not whispered
+- Card section titles: `text-lg font-bold` — settings/about sections
+- Body/summaries: `text-sm leading-relaxed` (cards) / `text-base leading-relaxed` (detail)
+- Metadata: `text-xs font-mono font-medium tracking-tight tabular-nums` — catalog numbers
 
-**Why:** Plus Jakarta Sans has personality without being trendy. Tighter leading for headings helps knowledge workers scan quickly. Monospace dates feel like catalog labels.
+**Why:** Bold editorial typography inspired by printed catalogs. Dramatic stat numbers (text-5xl) create visual anchor on settings page. Section headers are full-weight foreground-colored. App title bumped to text-2xl for editorial presence.
 
 ---
 
@@ -104,12 +123,14 @@
 **Base unit:** 16px (1rem = spacing-4 in Tailwind)
 
 **Common patterns:**
-- Card padding: `p-4` (16px)
-- Card margins: `mx-4 my-2` (16px horizontal, 8px vertical)
+- Card padding: `p-6` (24px) — generous whitespace (ref #5)
+- Card margins: `mx-4 my-3` (16px horizontal, 12px vertical) — more breathing room
 - Between elements: `gap-3` (12px) or `gap-2` (8px)
-- Icon containers: `p-2` (8px)
+- Icon containers: `p-2.5` (10px) with `rounded-full`
+- Section gaps: `space-y-5` (20px)
+- Detail view padding: `p-5` (20px)
 
-**Why:** 16px base creates comfortable density without cramping. Knowledge workers want information-rich views.
+**Why:** More generous padding creates breathing room. Cards feel like objects, not cramped rows. 24px card padding matches editorial catalog spacing.
 
 ---
 
@@ -118,15 +139,15 @@
 ### ItemCard
 
 ```tsx
-<div className="mx-4 my-2 p-4 card-base hover:border-accent">
+<div className="mx-4 my-3 p-6 card-base transition-all hover:shadow-md hover:border-accent">
   <div className="flex items-start gap-3">
-    <div className="rounded bg-accent-muted p-2">
-      <Icon className="h-4 w-4 text-accent" />
+    <div className="rounded-full bg-foreground p-2.5">
+      <Icon className="h-4 w-4 text-background" />
     </div>
     <div className="flex-1 min-w-0">
-      <h3 className="font-semibold text-sm leading-snug">...</h3>
-      <p className="text-xs text-muted-foreground leading-relaxed">...</p>
-      <span className="text-xs text-text-muted font-mono tracking-tight">
+      <h3 className="font-bold text-base leading-snug">...</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">...</p>
+      <span className="text-xs text-text-muted font-mono font-medium tracking-tight tabular-nums">
         {date}
       </span>
     </div>
@@ -134,82 +155,102 @@
 </div>
 ```
 
-**Why:** Icon in muted accent background (notebook tab). Metadata in monospace (catalog label). Border hover instead of shadow lift.
+**Type icon:** Solid black circle (`bg-foreground`) with white icon (`text-background`). Creates strong visual anchor on each card — inspired by file cabinet index labels (#1), bold black elements (#5, #8).
+
+**Why:** Bold icon badge + soft shadow + shadow lift on hover = tactile card. Date uses tabular-nums for aligned columns.
 
 ### TagPill
 
 ```tsx
-<span className="rounded px-2 py-0.5 text-xs bg-accent-muted text-accent border border-border-subtle">
+<span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-accent-muted text-accent">
   {tag}
 </span>
 ```
 
-**Why:** Small radius (not fully rounded), subtle border, no backdrop-blur. Feels like handwritten labels.
+**Why:** Fully rounded pill shape (capsule). No border — uses background tint only. Inspired by capsule tags from catalog layouts. Cleaner than bordered rectangles.
 
 ### Button
 
-**Default:** Solid accent background with hover to rust color
+**Default:** Solid accent background with shadow depth + hover lift
 **Outline:** Border-based with hover shifting border to accent
 
 ```tsx
 variant: {
-  default: "bg-primary text-primary-foreground hover:bg-accent-hover",
+  default: "bg-primary text-primary-foreground shadow-sm hover:bg-accent-hover hover:shadow-md",
   outline: "border border-border-subtle hover:border-accent hover:bg-surface-elevated",
   ghost: "hover:bg-accent-muted hover:text-accent"
 }
 ```
 
-**Why:** No gradients, no glows. Simple color transitions. Rust hover adds warmth.
+**Radius:** `rounded-xl` (16px match)
+
+**Why:** Buttons have subtle shadow for depth. Hover lifts shadow. Rounded-xl matches global 16px radius.
 
 ### Input
 
 ```tsx
-<input className="rounded px-3 py-2 bg-surface-elevated border border-border-subtle focus:ring-1 focus:ring-accent focus:border-accent" />
+<input className="rounded-xl px-3 py-2 bg-surface-elevated border border-border-subtle shadow-[inset_0_2px_4px_hsl(30_15%_20%/0.06)] focus:ring-1 focus:ring-accent" />
 ```
 
-**Why:** Simple focus ring (1px, not 2px). Warm backgrounds. No blur effects.
+**Why:** Deeper inner shadow (2px 4px) creates clearly recessed neumorphic-lite feel. Rounded-xl matches global radius.
 
 ### BottomNav
 
 ```tsx
-<nav className="bg-surface-elevated border-t border-border">
-  <button className={cn(
-    'transition-colors duration-150',
-    active ? 'text-accent' : 'text-muted-foreground hover:text-accent-hover'
-  )}>
-    <Icon />
-    <span>{label}</span>
-  </button>
+<nav className="bg-surface-elevated shadow-md border-t border-border-subtle/50 safe-area-bottom">
+  ...
 </nav>
 ```
 
-**Why:** Solid background (no blur), simple color transitions. Rust hover for warmth.
+**Active tab:** `font-semibold` on label for extra weight.
+
+**Why:** Shadow + subtle border-top for double definition. Creates physical tab bar feel. Active labels have bolder weight for clear selection state.
+
+### Catalog Divider
+
+```css
+.catalog-divider {
+  border-top: 1px solid hsl(var(--border));
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+```
+
+**Used in:** ItemDetail sections (Summary, Content, Source) to create structured catalog-style layout with horizontal rules between data sections. Inspired by Joshua Kaplan's (#6) catalog layout with clear data pair separation.
 
 ---
 
 ## Transitions
 
-**Speed:** 150ms for colors, 200ms for movement
+**Speed:** 150ms for colors, 150ms for shadows
 **Easing:** Default ease-out
-**Properties:** Colors only (no scale, no transform except layout shifts)
+**Properties:** `transition-all duration-150` for components with shadow changes
 
 ```css
-transition-colors duration-150
+transition-all duration-150
 ```
 
-**Why:** Fast, subtle. Knowledge tools should feel immediate. No flashy animations.
+**Why:** Fast, subtle. Shadow transitions need `transition-all` not just `transition-colors`.
 
 ---
 
 ## Removed
 
 **Aurora orbs:** Deleted — felt futuristic/generic
-**Glassmorphism:** All `backdrop-blur` removed
-**Gradients:** No `bg-gradient-to-r` — flat colors only
-**Shadows:** No `shadow-` utilities except in graph controls (functional)
+**Glassmorphism:** All `backdrop-blur` removed. All `glass-card`, `glass-border`, `bg-glass` classes deleted.
+**Gradients:** No `bg-gradient-to-r` — editorial flat colors only (exception: AI answer card uses subtle accent gradient)
 **Scale transforms:** No `active:scale-[0.99]` — distracting
 
-**Why:** These patterns create trendy/cold aesthetics. Notebook feel requires grounded, warm simplicity.
+## Added (v3)
+
+**Stronger shadows:** Increased shadow intensity across all tokens for unmistakable depth
+**16px radius:** `--radius: 1rem`, `rounded-2xl` on cards, `rounded-xl` on buttons/inputs
+**Black type badges:** Solid `bg-foreground` circles with `text-background` icons for bold visual anchors
+**Catalog dividers:** Horizontal rules between detail view sections for structured data layout
+**Dramatic stat numbers:** `text-5xl font-bold font-mono tabular-nums` for settings page counters
+**Editorial title scale:** `text-2xl` app header, `text-lg` section titles
+**Generous spacing:** `p-6` card padding, `my-3` card margins, `p-5` detail view
+**Deeper inset inputs:** `inset 0 2px 4px` for clearly recessed form fields
 
 ---
 
@@ -221,7 +262,7 @@ Knowledge graph uses ReactFlow. Nodes are ItemCards with same styling. Controls 
 .react-flow-controls {
   background: hsl(var(--surface-elevated));
   border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
+  border-radius: 1rem;
 }
 
 .react-flow__edge:hover {

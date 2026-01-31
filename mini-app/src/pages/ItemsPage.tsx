@@ -103,7 +103,7 @@ export function ItemsPage({ filterTag, onTagClick, onItemSelect }: ItemsPageProp
 
       {/* Filter indicator */}
       {filterTag && (
-        <div className="mx-4 mt-2 px-3 py-2 glass-card flex items-center justify-between">
+        <div className="mx-4 mt-2 px-3 py-2 card-base flex items-center justify-between">
           <span className="text-sm text-foreground">
             Filtered by: <strong className="text-accent">{filterTag}</strong>
           </span>

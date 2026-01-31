@@ -96,7 +96,7 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
         {hasResults && (
           <div className="pt-2">
             {!showAI && (
-              <p className="px-4 py-2 text-xs text-muted-foreground font-medium">
+              <p className="px-4 py-2 text-sm font-bold text-foreground">
                 {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -117,7 +117,7 @@ export function SearchPage({ onTagClick, onItemSelect }: SearchPageProps) {
         {/* Initial state */}
         {!debouncedQuery && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="rounded-full bg-accent-muted p-4 mb-4">
+            <div className="rounded-full bg-accent-muted p-4 mb-4 shadow-md border-2 border-border-subtle">
               <Search className="h-8 w-8 text-accent" />
             </div>
             <p className="text-sm text-muted-foreground">

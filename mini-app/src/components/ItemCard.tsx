@@ -1,4 +1,3 @@
-import { Link2, FileText, Image, Search } from 'lucide-react'
 import { TagPill } from './TagPill'
 import { cn } from '@/lib/utils'
 import type { Item } from '@/api'
@@ -7,13 +6,6 @@ interface ItemCardProps {
   item: Item
   onClick?: () => void
   onTagClick?: (tag: string) => void
-}
-
-const typeIcons: Record<string, React.ElementType> = {
-  link: Link2,
-  note: FileText,
-  image: Image,
-  search: Search,
 }
 
 function formatDate(dateString: string): string {
@@ -34,8 +26,6 @@ function formatDate(dateString: string): string {
 }
 
 export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
-  const Icon = typeIcons[item.type] || FileText
-
   return (
     <div
       role="button"
@@ -47,50 +37,57 @@ export function ItemCard({ item, onClick, onTagClick }: ItemCardProps) {
         }
       }}
       className={cn(
-        'mx-4 my-2 p-4 card-base transition-colors duration-150',
-        'hover:border-accent active:bg-surface-elevated',
+        'mx-4 my-3 p-6 card-base transition-all duration-150',
+        'hover:shadow-md hover:border-accent active:bg-surface-elevated',
         onClick && 'cursor-pointer'
       )}
     >
-      <div className="flex items-start gap-3">
-        <div className="rounded bg-accent-muted p-2 shrink-0">
-          <Icon className="h-4 w-4 text-accent" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm leading-snug mb-1 line-clamp-2 text-foreground">
-            {item.title || 'Untitled'}
-          </h3>
-          {item.summary && (
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2">
-              {item.summary}
-            </p>
-          )}
-          <div className="flex items-center gap-2 flex-wrap">
-            {item.tags.slice(0, 3).map((tag) => (
-              <TagPill
-                key={tag}
-                tag={tag}
-                onClick={
-                  onTagClick
-                    ? (e) => {
-                        e?.stopPropagation()
-                        onTagClick(tag)
-                      }
-                    : undefined
-                }
-              />
-            ))}
-            {item.tags.length > 3 && (
-              <span className="text-xs text-muted-foreground">
-                +{item.tags.length - 3}
-              </span>
-            )}
-            <span className="text-xs text-text-muted ml-auto font-mono tracking-tight">
-              {formatDate(item.created_at)}
-            </span>
-          </div>
-        </div>
+      {/* Type badge + date row */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="rounded-md bg-foreground text-background px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono">
+          {item.type}
+        </span>
+        <span className="text-xs text-text-muted font-mono font-medium tracking-tight tabular-nums">
+          {formatDate(item.created_at)}
+        </span>
       </div>
+
+      {/* Title */}
+      <h3 className="font-bold text-lg leading-snug mb-1 line-clamp-2 text-foreground">
+        {item.title || 'Untitled'}
+      </h3>
+
+      {/* Summary */}
+      {item.summary && (
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+          {item.summary}
+        </p>
+      )}
+
+      {/* Tags */}
+      {item.tags.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {item.tags.slice(0, 3).map((tag) => (
+            <TagPill
+              key={tag}
+              tag={tag}
+              onClick={
+                onTagClick
+                  ? (e) => {
+                      e?.stopPropagation()
+                      onTagClick(tag)
+                    }
+                  : undefined
+              }
+            />
+          ))}
+          {item.tags.length > 3 && (
+            <span className="text-xs text-muted-foreground">
+              +{item.tags.length - 3}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
